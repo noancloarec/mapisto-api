@@ -1,0 +1,80 @@
+openapi: "3.0.0"
+info:
+  title: Mapisto API
+  version: "0.1"
+tags:
+  - name: State
+    description: "Read and manage states data"
+paths:
+  /state:
+    get:
+      tags:
+        - State
+      summary: Returns all states for a given date
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: datetime
+          example : '1918-02-01T15:00:00Z'
+      responses:
+        "200":
+          description: All states returned
+          content:
+            application/json:
+              schema:
+                type : array
+                items :
+                  $ref: "#/components/schemas/State"
+    post :
+      tags:
+        - State
+      summary : Put state information in the database for a given time perioed
+      parameters:
+        - name : validity_start
+          in: query
+          required: true
+          schema : 
+            type: string
+            format: datetime
+          example : '1918-01-01T00:00:00Z'
+        - name : validity_end
+          in: query
+          required: true
+          schema : 
+            type: string
+            format: datetime
+          example : '1919-01-01T00:00:00Z'
+      requestBody:
+        description : The State to added
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/State"
+      responses:
+        '200':
+          description: State was correctly added
+            
+components:
+  schemas:
+    State:
+      type: object
+      properties:
+        state_id:
+          type: integer
+          example : 1
+        color:
+          type: string
+          example : 'FF0000'
+        territories :
+          description: "List of territories included in the state"
+          type: array
+          items:
+            $ref: '#components/schemas/Territory'
+    Territory:
+      description: "Coordinate sequence of the territory's polygon, svg style"
+      type : string
+      example : 'M150 0 L75 200 L225 200 Z'
