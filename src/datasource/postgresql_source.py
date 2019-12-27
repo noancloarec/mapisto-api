@@ -60,4 +60,15 @@ class PostgreSQLDataSource() :
         except Exception as e:
             conn.rollback()
             raise e
+    
+    def get_land(self):
+        conn = self.open_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+        SELECT d_path 
+        FROM LandMasses;
+        ''')
+        records = cursor.fetchall()
+        conn.close()
+        return [tup[0] for tup in records]
 

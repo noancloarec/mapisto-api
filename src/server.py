@@ -17,8 +17,8 @@ CORS(app)
 app.json_encoder = MapistoObjectsEncoder
 
 SWAGGER_URL = '/docs' # URL for exposing Swagger UI (without trailing '/')
-OPENAPI_PATH = 'http://localhost:5000/static/openapi.yaml' # Our API url (can of course be a local resource)
-API_DOC_URL = 'http://localhost:5000/docs'
+OPENAPI_PATH = '/static/openapi.yaml' # Our API url (can of course be a local resource)
+API_DOC_URL = '/docs'
 # Call factory function to create our blueprint
 swaggerui_blueprint = get_swaggerui_blueprint(
 SWAGGER_URL, # Swagger UI static files will be mapped to '{SWAGGER_URL}/dist/'
@@ -56,6 +56,10 @@ def post_state():
     print('got json')
     state = State.from_dict(request.json)
     return str(datasource.post_state(state, validity_start, validity_end))
+
+@app.route('/land', methods=['GET'])
+def get_land():
+    return jsonify(datasource.get_land())
 
 @app.route('/', methods = ['GET'])
 def redirectDoc():
