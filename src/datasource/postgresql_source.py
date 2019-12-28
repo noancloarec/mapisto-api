@@ -39,21 +39,39 @@ class PostgreSQLDataSource() :
                 current_state.territories.append(d_path)
         return res
 
-    def post_state(self, state:State, validity_start:datetime, validity_end:datetime):
+    def add_state(self, state:State, validity_start:datetime, validity_end:datetime):
         try:
             conn = self.open_connection()
             with conn.cursor() as curs:
-                curs.execute('INSERT INTO States VALUES(default) RETURNING state_id')
+                curs.execute('INSERT INTO states VALUES(default) RETURNING state_id')
                 state_id = curs.fetchone()[0]
-                for territory_path in state.territories:
-                    curs.execute(
-                        'INSERT INTO Territories(d_path, precision_in_km, validity_start, validity_end, state_id) VALUES(%s, %s, %s, %s, %s)', 
-                        (territory_path, str(1.0), validity_start.isoformat(), validity_end.isoformat(), state_id)
-                    )
                 curs.execute(
-                    'INSERT INTO StateNames(name, state_id, validity_start, validity_end, color) VALUES(%s, %s, %s, %s, %s)',
+                    'INSERT INTO state_names(name, state_id, validity_start, validity_end, color) VALUES(%s, %s, %s, %s, %s)',
                     (state.name, state_id, validity_start.isoformat(), validity_end.isoformat(), state.color)
                 )
+                for territory in state.territories:
+                    curs.execute(
+                        'INSERT INTO territories(state_id, validity_start, validity_end, min_x, max_x, min_y, max_y) VALUES(%s, %s, %s, %s, %s, %s, %s) RETURNING territory_id', 
+                        (
+                            state_id,
+                            validity_start.isoformat(), 
+                            validity_end.isoformat(), 
+                            territory.min_x, 
+                            territory.max_x, 
+                            territory.min_y,
+                            territory.max_y
+                        )
+                    )
+                    territory_id = curs.fetchone()[0]
+                    for territory_shape in territory.representations:
+                        curs.execute(
+                            'INSERT INTO territories_shapes(d_path, precision_in_km, territory_id) VALUES(%s, %s, %s)',
+                            (
+                                territory_shape.d_path,
+                                territory_shape.precision_in_km,
+                                territory_id
+                            )
+                        )
                 conn.commit()
                 conn.close()
                 return state_id

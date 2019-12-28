@@ -3,12 +3,14 @@ info:
   title: Mapisto API
   version: "0.1"
 servers:
-  - url: http://api.mapisto.org
+  - url: https://api.mapisto.org
   - url: 'http://localhost:8080'
   - url: 'http://localhost:5000'
 tags:
   - name: State
     description: "Read and manage states data"
+  - name : Territories
+    description: "Read an manage territories' data"
   - name : Land
     description: "Get land coordinates to draw the map"
 paths:
@@ -40,6 +42,42 @@ paths:
             type: string
             format: datetime
           example : '1918-02-01T15:00:00Z'
+        - name: precision_in_km
+          in: query
+          required: true
+          description: The required precision, in kilometers
+          schema:
+            type: number
+          example : 1.0
+        - name: min_x
+          in: query
+          required: true
+          description: The left x coordinate of the viewbox in which the territories are requested
+          schema:
+            type: number
+          example : 1.0
+        - name: max_x
+          in: query
+          required: true
+          description: The right x coordinate of the viewbox in which the territories are requested
+          schema:
+            type: number
+          example : 1000.0
+        - name: min_y
+          in: query
+          required: true
+          description: The top y coordinate of the viewbox in which the territories are requested
+          schema:
+            type: number
+          example : 1.0
+        - name: max_y
+          in: query
+          required: true
+          description: The bottom y coordinate of the viewbox in which the territories are requested
+          schema:
+            type: number
+          example : 1000.0
+        
       responses:
         "200":
           description: All states returned
@@ -52,7 +90,7 @@ paths:
     post :
       tags:
         - State
-      summary : Put state information in the database for a given time perioed
+      summary : Add state information in the database for a given time perioed
       parameters:
         - name : validity_start
           in: query
@@ -69,7 +107,7 @@ paths:
             format: datetime
           example : '1919-01-01T00:00:00Z'
       requestBody:
-        description : The State to added
+        description : The State to add
         required: true
         content:
           application/json:
@@ -78,6 +116,8 @@ paths:
       responses:
         '200':
           description: State was correctly added
+        '400':
+          description: Bad Request
             
 components:
   schemas:
@@ -100,5 +140,11 @@ components:
             $ref: '#components/schemas/Territory'
     Territory:
       description: "Coordinate sequence of the territory's polygon, svg style"
-      type : string
-      example : 'M150 0 L75 200 L225 200 Z'
+      type : object
+      properties:
+        territory_id:
+          type: integer
+          example: 1
+        d_path:
+          type: string
+          example : 'M150 0 L75 200 L225 200 Z'

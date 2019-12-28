@@ -3,11 +3,17 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from datetime import datetime
 from werkzeug.exceptions import BadRequest
 from flask_cors import CORS
+import os
 
 from datasource.postgresql_source import PostgreSQLDataSource
 from json_encoder import MapistoObjectsEncoder
 from resources.State import State
 from dateutil.parser import parse
+import logging
+
+
+logging.basicConfig(level=logging.DEBUG)
+
 
 datasource = PostgreSQLDataSource()
 
@@ -52,10 +58,10 @@ def post_state():
         validity_end = parse(request.args.get('validity_end'))
     except TypeError:
         raise BadRequest('Wrong format for validity start or validity end')
-    print('start', validity_start)
-    print('got json')
-    state = State.from_dict(request.json)
-    return str(datasource.post_state(state, validity_start, validity_end))
+    state = State.from_dict(request.json, precision_levels=[float(prec) for prec in os.environ['PRECISION_LEVELS'].split(' ')])
+    logging.debug("PARSED STATE")
+    logging.debug(state.territories[0])
+    return str(datasource.add_state(state, validity_start, validity_end))
 
 @app.route('/land', methods=['GET'])
 def get_land():

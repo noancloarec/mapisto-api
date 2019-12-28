@@ -1,0 +1,15 @@
+version: '3.4'
+services:
+  mapisto-api:
+    build: 
+      context: .
+      target : base_env
+    ports:
+      - "8080:5000"
+    volumes :
+      - ./src:/app/src
+    environment: 
+      FLASK_ENV: development
+    env_file: 
+      - mapisto_config.env
+      - postgres.conf.env
