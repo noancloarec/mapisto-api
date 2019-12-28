@@ -3,6 +3,8 @@ import os
 import psycopg2
 from datetime import datetime
 from random import randint
+from resources.Territory import Territory
+from resources.TerritoryShape import TerritoryShape
 
 class PostgreSQLDataSource() :
     def open_connection(self) :
@@ -14,25 +16,32 @@ class PostgreSQLDataSource() :
             port=os.environ['MAPISTO_DB_PORT'],
             options='-c search_path=mapisto')
 
-    def get_states(self, time:datetime):
+    def get_states(self, time:datetime, precision:float, bbmin_x, bbmax_x, bbmin_y, bbmax_y):
         conn = self.open_connection()
         cursor = conn.cursor()
         cursor.execute('''
-        SELECT state_id, color, name, d_path 
-        FROM States NATURAL JOIN Territories NATURAL JOIN StateNames 
+        SELECT state_id, color, name, d_path, territory_id
+        FROM states NATURAL JOIN territories NATURAL JOIN state_names NATURAL JOIN territories_shapes 
         WHERE 
-            Territories.validity_start <= %s AND Territories.validity_end > %s
-            AND  StateNames.validity_start <= %s AND StateNames.validity_end > %s
+            territories.validity_start <= %s AND territories.validity_end > %s
+            AND  state_names.validity_start <= %s AND state_names.validity_end > %s
+            AND precision_in_km=%s
+            AND NOT(
+                %s < territories.min_x
+                OR territories.max_x < %s
+                OR %s < territories.min_y
+                OR territories.max_y < %s
+            )
         ORDER BY state_id
-        ''', [time.isoformat()] * 4 )
+        ''', [time.isoformat()] * 4 + [precision, bbmax_x, bbmin_x, bbmax_y, bbmin_y])
         records = cursor.fetchall()
         conn.close()
         current_state_id = None
         res = []
         for row in records:
-            (state_id, color, name, d_path) = row
+            (state_id, color, name, d_path, territory_id) = row
             if current_state_id != state_id :
-                current_state = State(state_id, name, [d_path], color)
+                current_state = State(state_id, name, [Territory(territory_id, representations=[TerritoryShape(d_path)])], color)
                 current_state_id = state_id
                 res.append(current_state)
             else :

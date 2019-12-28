@@ -6,7 +6,7 @@ from .TerritoryShape import TerritoryShape
 
 
 class Territory:
-    def __init__(self, territory_id,  min_x, max_x, min_y, max_y, representations: list):
+    def __init__(self, territory_id, representations: list,  min_x=None, max_x=None, min_y=None, max_y=None):
         self.territory_id = territory_id
         self.representations = representations
         self.min_x = min_x

@@ -132,7 +132,7 @@ components:
           example: Austria-Hungary
         color:
           type: string
-          example : 'FF0000'
+          example : '#FF0000'
         territories :
           description: "List of territories included in the state"
           type: array

@@ -47,7 +47,14 @@ def get_states():
         date = parse(request.args.get('date'))
     except TypeError:
         raise BadRequest('date param not valid')
-    res = jsonify(datasource.get_states(date))
+    res = jsonify(datasource.get_states(
+        date,
+        precision=float(request.args.get('precision_in_km')),
+        bbmin_x=int(request.args.get('min_x')),
+        bbmax_x=int(request.args.get('max_x')),
+        bbmin_y=int(request.args.get('min_y')),
+        bbmax_y=int(request.args.get('max_y'))
+        ))
     # res = jsonify(['youhou'])
     return res
 
