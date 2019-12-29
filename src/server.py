@@ -8,9 +8,11 @@ import os
 from datasource.postgresql_source import PostgreSQLDataSource
 from json_encoder import MapistoObjectsEncoder
 from resources.State import State
+from resources.Land import Land
 from dateutil.parser import parse
 import logging
 
+PRECISION_LEVELS = [float(prec) for prec in os.environ['PRECISION_LEVELS'].split(' ')]
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -40,20 +42,21 @@ app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 def send_static(path):
     return send_from_directory('static', path)
 
-@app.route('/state', methods=['GET'])
+@app.route('/map', methods=['GET'])
 def get_states():
     print('GET STATES')
     try : 
         date = parse(request.args.get('date'))
     except TypeError:
         raise BadRequest('date param not valid')
+    precision, bbmin_x, bbmax_x, bbmin_y, bbmax_y = extract_map_request()
     res = jsonify(datasource.get_states(
         date,
-        precision=float(request.args.get('precision_in_km')),
-        bbmin_x=int(request.args.get('min_x')),
-        bbmax_x=int(request.args.get('max_x')),
-        bbmin_y=int(request.args.get('min_y')),
-        bbmax_y=int(request.args.get('max_y'))
+        precision=precision,
+        bbmin_x=bbmin_x,
+        bbmax_x=bbmax_x,
+        bbmin_y=bbmin_y,
+        bbmax_y=bbmax_y
         ))
     # res = jsonify(['youhou'])
     return res
@@ -65,15 +68,37 @@ def post_state():
         validity_end = parse(request.args.get('validity_end'))
     except TypeError:
         raise BadRequest('Wrong format for validity start or validity end')
-    state = State.from_dict(request.json, precision_levels=[float(prec) for prec in os.environ['PRECISION_LEVELS'].split(' ')])
+    state = State.from_dict(request.json, precision_levels=PRECISION_LEVELS)
     logging.debug("PARSED STATE")
     logging.debug(state.territories[0])
     return str(datasource.add_state(state, validity_start, validity_end))
 
+@app.route('/land', methods=['POST'])
+def post_land():
+    land=Land.from_dict(request.json, PRECISION_LEVELS)
+    return jsonify(datasource.add_land(land))
+
 @app.route('/land', methods=['GET'])
 def get_land():
-    return jsonify(datasource.get_land())
+    precision, bbmin_x, bbmax_x, bbmin_y, bbmax_y = extract_map_request()
+    return jsonify(
+        datasource.get_land(
+            precision=precision,
+            bbmin_x=bbmin_x,
+            bbmax_x=bbmax_x,
+            bbmin_y=bbmin_y,
+            bbmax_y=bbmax_y
+        )
+        )
 
 @app.route('/', methods = ['GET'])
 def redirectDoc():
     return redirect(API_DOC_URL)
+
+def extract_map_request():
+    precision=float(request.args.get('precision_in_km')),
+    bbmin_x=int(request.args.get('min_x')),
+    bbmax_x=int(request.args.get('max_x')),
+    bbmin_y=int(request.args.get('min_y')),
+    bbmax_y=int(request.args.get('max_y'))
+    return (precision, bbmin_x, bbmax_x, bbmin_y, bbmax_y)

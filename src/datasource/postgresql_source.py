@@ -5,6 +5,8 @@ from datetime import datetime
 from random import randint
 from resources.Territory import Territory
 from resources.TerritoryShape import TerritoryShape
+from resources.Land import Land
+from resources.LandShape import LandShape
 
 class PostgreSQLDataSource() :
     def open_connection(self) :
@@ -45,7 +47,7 @@ class PostgreSQLDataSource() :
                 current_state_id = state_id
                 res.append(current_state)
             else :
-                current_state.territories.append(d_path)
+                current_state.territories.append(Territory(territory_id, representations=[TerritoryShape(d_path)]))
         return res
 
     def add_state(self, state:State, validity_start:datetime, validity_end:datetime):
@@ -88,14 +90,53 @@ class PostgreSQLDataSource() :
             conn.rollback()
             raise e
     
-    def get_land(self):
+    def get_land(self, precision:float, bbmin_x, bbmax_x, bbmin_y, bbmax_y):
         conn = self.open_connection()
         cursor = conn.cursor()
         cursor.execute('''
-        SELECT d_path 
-        FROM LandMasses;
-        ''')
+        SELECT land_id, d_path
+        FROM lands NATURAL JOIN lands_shapes 
+        WHERE 
+            precision_in_km=%s
+            AND NOT(
+                %s < lands.min_x
+                OR lands.max_x < %s
+                OR %s < lands.min_y
+                OR lands.max_y < %s
+            )
+        ''', 
+            (precision, bbmax_x, bbmin_x, bbmax_y, bbmin_y)
+        )
         records = cursor.fetchall()
         conn.close()
-        return [tup[0] for tup in records]
+        return [Land(row[0], [LandShape(row[1])]) for row in records]
 
+    def add_land(self, land:Land):
+        try:
+            conn = self.open_connection()
+            with conn.cursor() as curs:
+                curs.execute(
+                    'INSERT INTO lands(min_x, max_x, min_y, max_y) VALUES(%s, %s, %s, %s) RETURNING land_id', 
+                    (
+                        land.min_x, 
+                        land.max_x, 
+                        land.min_y,
+                        land.max_y
+                    )
+                )
+                land_id = curs.fetchone()[0]
+                for land_shape in land.representations:
+                    curs.execute(
+                        'INSERT INTO lands_shapes(d_path, precision_in_km, land_id) VALUES(%s, %s, %s)',
+                        (
+                            land_shape.d_path,
+                            land_shape.precision_in_km,
+                            land_id
+                        )
+                    )
+                conn.commit()
+                conn.close()
+                return land_id
+        except Exception as e:
+            conn.rollback()
+            raise e

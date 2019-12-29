@@ -4,21 +4,59 @@ info:
   version: "0.1"
 servers:
   - url: https://api.mapisto.org
-  - url: 'http://localhost:8080'
-  - url: 'http://localhost:5000'
+  - url: "http://localhost:8080"
+  - url: "http://localhost:5000"
 tags:
+  - name: Map
+    description: Load mapisto's maps
   - name: State
-    description: "Read and manage states data"
-  - name : Territories
+    description: "manage states data"
+  - name: Territories
     description: "Read an manage territories' data"
-  - name : Land
+  - name: Land
     description: "Get land coordinates to draw the map"
 paths:
   /land:
     get:
+      parameters:
+        - name: precision_in_km
+          in: query
+          required: true
+          description: The required precision, in kilometers
+          schema:
+            type: number
+          example: 1.0
+        - name: min_x
+          in: query
+          required: true
+          description: The left x coordinate of the viewbox in which the territories are requested
+          schema:
+            type: number
+          example: 1.0
+        - name: max_x
+          in: query
+          required: true
+          description: The right x coordinate of the viewbox in which the territories are requested
+          schema:
+            type: number
+          example: 1000.0
+        - name: min_y
+          in: query
+          required: true
+          description: The top y coordinate of the viewbox in which the territories are requested
+          schema:
+            type: number
+          example: 1.0
+        - name: max_y
+          in: query
+          required: true
+          description: The bottom y coordinate of the viewbox in which the territories are requested
+          schema:
+            type: number
+          example: 1000.0
       tags:
         - Land
-      summary : Returns all lands shapes on the world map
+      summary: Returns all lands shapes on the world map
       responses:
         "200":
           description: All land shapes were returned
@@ -26,14 +64,26 @@ paths:
             application/json:
               schema:
                 type: array
-                items :
-                  type: string
-                  example : 'M150 0 L75 200 L225 200 Z'
-  /state:
+                items:
+                  $ref: '#/components/schemas/LandShape'
+    post:
+      tags:
+        - Land
+      summary: "Add a land shape to the database" 
+      requestBody:
+        content:
+          application/json:
+            schema : 
+              $ref: '#/components/schemas/LandShape'
+      responses:
+        "200":
+          description: The land shape was correctly added
+
+  /map:
     get:
       tags:
-        - State
-      summary: Returns all states for a given date
+        - Map
+      summary: Returns the state's maps
       parameters:
         - name: date
           in: query
@@ -41,84 +91,85 @@ paths:
           schema:
             type: string
             format: datetime
-          example : '1918-02-01T15:00:00Z'
+          example: "1918-02-01T15:00:00Z"
         - name: precision_in_km
           in: query
           required: true
           description: The required precision, in kilometers
           schema:
             type: number
-          example : 1.0
+          example: 1.0
         - name: min_x
           in: query
           required: true
           description: The left x coordinate of the viewbox in which the territories are requested
           schema:
             type: number
-          example : 1.0
+          example: 1.0
         - name: max_x
           in: query
           required: true
           description: The right x coordinate of the viewbox in which the territories are requested
           schema:
             type: number
-          example : 1000.0
+          example: 1000.0
         - name: min_y
           in: query
           required: true
           description: The top y coordinate of the viewbox in which the territories are requested
           schema:
             type: number
-          example : 1.0
+          example: 1.0
         - name: max_y
           in: query
           required: true
           description: The bottom y coordinate of the viewbox in which the territories are requested
           schema:
             type: number
-          example : 1000.0
-        
+          example: 1000.0
+
       responses:
         "200":
           description: All states returned
           content:
             application/json:
               schema:
-                type : array
-                items :
+                type: array
+                items:
                   $ref: "#/components/schemas/State"
-    post :
+  /state:
+    post:
       tags:
         - State
-      summary : Add state information in the database for a given time perioed
+      summary: Add state information in the database for a given time perioed
       parameters:
-        - name : validity_start
+        - name: validity_start
           in: query
           required: true
-          schema : 
+          schema:
             type: string
             format: datetime
-          example : '1918-01-01T00:00:00Z'
-        - name : validity_end
+          example: "1918-01-01T00:00:00Z"
+        - name: validity_end
           in: query
           required: true
-          schema : 
+          schema:
             type: string
             format: datetime
-          example : '1919-01-01T00:00:00Z'
+          example: "1919-01-01T00:00:00Z"
       requestBody:
-        description : The State to add
+        description: The State to add
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/State"
       responses:
-        '200':
+        "200":
           description: State was correctly added
-        '400':
+        "400":
           description: Bad Request
-            
+
 components:
   schemas:
     State:
@@ -126,25 +177,35 @@ components:
       properties:
         state_id:
           type: integer
-          example : 1
+          example: 1
         name:
           type: string
           example: Austria-Hungary
         color:
           type: string
-          example : '#FF0000'
-        territories :
+          example: "#FF0000"
+        territories:
           description: "List of territories included in the state"
           type: array
           items:
-            $ref: '#components/schemas/Territory'
+            $ref: "#components/schemas/Territory"
     Territory:
-      description: "Coordinate sequence of the territory's polygon, svg style"
-      type : object
+      description: "Representation of a territory belonging to a state"
+      type: object
       properties:
         territory_id:
           type: integer
           example: 1
         d_path:
           type: string
-          example : 'M150 0 L75 200 L225 200 Z'
+          example: "M150 0 L75 200 L225 200 Z"
+    LandShape:
+      description: Representation of a land map 
+      type: object
+      properties:
+        land_id:
+          type : integer
+          example: 1
+        d_path:
+          type: string
+          example: "M400 0 L75 200 L225 200 Z"
