@@ -1,20 +1,18 @@
-version: '3'
+version: "3.4"
 services:
-  nginx-proxy:
-    image: mapisto/mapisto-front:latest
-    ports:
-      - 80:80
-      - 443:443
-    volumes :
-      - /etc/letsencrypt:/etc/letsencrypt
-      - ./nginx_conf.d:/etc/nginx/conf.d
   mapisto-api:
-    image: mapisto/mapisto-api:latest
-    environment: 
-      MAPISTO_DB_HOST : database
-    env_file: 
-      - config.env
+    build:
+      context: .
+      target: base_env
+    ports:
+      - "8080:5000"
+    volumes:
+      - ./src:/app/src
+    environment:
+      MAPISTO_DB_HOST: database
+    env_file:
+      - conf.env
   database:
     image: postgres:12-alpine
-    volumes: 
+    volumes:
       - $HOME/docker/volumes/postgres:/var/lib/postgresql/data
