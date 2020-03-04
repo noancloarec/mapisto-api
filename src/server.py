@@ -97,8 +97,8 @@ def redirectDoc():
 
 def extract_map_request():
     precision=float(request.args.get('precision_in_km')),
-    bbmin_x=int(request.args.get('min_x')),
-    bbmax_x=int(request.args.get('max_x')),
-    bbmin_y=int(request.args.get('min_y')),
-    bbmax_y=int(request.args.get('max_y'))
+    bbmin_x=int(float(request.args.get('min_x'))),
+    bbmax_x=int(float(request.args.get('max_x'))),
+    bbmin_y=int(float(request.args.get('min_y'))),
+    bbmax_y=int(float(request.args.get('max_y')))
     return (precision, bbmin_x, bbmax_x, bbmin_y, bbmax_y)

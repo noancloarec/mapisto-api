@@ -22,8 +22,11 @@ class PostgreSQLDataSource() :
         conn = self.open_connection()
         cursor = conn.cursor()
         cursor.execute('''
-        SELECT state_id, color, name, d_path, territory_id
-        FROM states NATURAL JOIN territories NATURAL JOIN state_names NATURAL JOIN territories_shapes 
+        SELECT states.state_id, color, name, d_path, territory_id
+        FROM states 
+            INNER  JOIN territories ON states.state_id=territories.state_id 
+            INNER JOIN state_names ON state_names.state_id=states.state_id 
+            NATURAL JOIN territories_shapes 
         WHERE 
             territories.validity_start <= %s AND territories.validity_end > %s
             AND  state_names.validity_start <= %s AND state_names.validity_end > %s

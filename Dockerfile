@@ -11,4 +11,5 @@ WORKDIR /app/src
 ENV FLASK_APP=server.py
 CMD flask run -h 0.0.0.0
 FROM base_env
-ADD src src
+ADD src .
+
