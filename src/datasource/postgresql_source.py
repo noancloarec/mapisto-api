@@ -7,6 +7,7 @@ from resources.Territory import Territory
 from resources.TerritoryShape import TerritoryShape
 from resources.Land import Land
 from resources.LandShape import LandShape
+from werkzeug.exceptions import InternalServerError, NotFound
 
 class PostgreSQLDataSource() :
     def open_connection(self) :
@@ -52,6 +53,27 @@ class PostgreSQLDataSource() :
             else :
                 current_state.territories.append(Territory(territory_id, representations=[TerritoryShape(d_path)]))
         return res
+
+    def get_state_from_territory(self, territory_id:int, time:datetime):
+        conn = self.open_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+        SELECT states.state_id, state_names.name, state_names.validity_start, state_names.validity_end, state_names.color
+        FROM states 
+            INNER  JOIN territories ON states.state_id=territories.state_id 
+            INNER JOIN state_names ON state_names.state_id=states.state_id 
+        WHERE 
+            territories.territory_id = %s 
+            AND  state_names.validity_start <= %s AND state_names.validity_end > %s
+        ''', [territory_id, time.isoformat(), time.isoformat()] )
+        records = cursor.fetchall()
+        conn.close()
+        if len(records) > 1:
+            raise InternalServerError("Several state names found for 1 territory and 1 time. Maybe 2 state_names overlap in time")
+        if len(records)==0:
+            raise NotFound("Territory does not exist or does not have a state representation at this time")
+        (state_id, name, validity_start, validity_end, color) = records[0]
+        return State(state_id, name, color=color, validity_start=validity_start, validity_end=validity_end)
 
     def add_state(self, state:State, validity_start:datetime, validity_end:datetime):
         try:

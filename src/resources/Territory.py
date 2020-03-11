@@ -15,6 +15,7 @@ class Territory:
 
     @staticmethod
     def from_dict(json_dict, precision_levels):
+        assert isinstance(json_dict, dict), "The territory provided is not a dict"
         json_dict = fill_optional_fields(json_dict, ['territory_id'])
         minx, miny, maxx, maxy = get_bounding_box(json_dict['d_path'])
         representations = []

@@ -1,11 +1,13 @@
 from .helper import fill_optional_fields
 from .Territory import Territory
 class State:
-    def __init__(self, state_id,name, territories, color):
+    def __init__(self, state_id,name, territories=None, color=None, validity_start=None, validity_end=None):
         self.state_id = state_id
         self.territories = territories
         self.color = color
         self.name = name
+        self.validity_end = validity_end
+        self.validity_start = validity_start
     
     @staticmethod
     def from_dict(json_dict, precision_levels):

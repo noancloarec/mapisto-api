@@ -169,6 +169,34 @@ paths:
           description: State was correctly added
         "400":
           description: Bad Request
+  /state_from_territory/{territory_id}:
+    get:
+      tags : 
+        - State
+      summary: Returns a state's information from a territory id
+      parameters:
+        - name : territory_id
+          in : path
+          required: true
+          schema :
+            $ref : "#/components/schemas/Territory/properties/territory_id"
+          example : 1
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: datetime
+          example: "1918-02-01T15:00:00Z"
+      responses:
+        "200" :
+          content:
+            application/json :
+              schema : 
+                $ref : "#/components/schemas/State"
+          description: State info retrieved
+        "404" :
+          description: Territory not found
 
 components:
   schemas:
