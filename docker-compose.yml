@@ -10,6 +10,7 @@ services:
       - ./src:/app/src
     environment:
       MAPISTO_DB_HOST: database
+      FLASK_DEBUG: 1
     env_file:
       - conf.env
   database:
