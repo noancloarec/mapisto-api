@@ -49,11 +49,7 @@ def send_static(path):
 
 @app.route('/map', methods=['GET'])
 def get_states():
-    print('GET STATES')
-    try:
-        date = parse(request.args.get('date'))
-    except TypeError:
-        raise BadRequest('date param not valid')
+    date = date_from_request('date')
     precision, bbmin_x, bbmax_x, bbmin_y, bbmax_y = extract_map_request()
     res = jsonify(datasource.get_states(
         date,
@@ -63,21 +59,21 @@ def get_states():
         bbmin_y=bbmin_y,
         bbmax_y=bbmax_y
     ))
-    # res = jsonify(['youhou'])
     return res
 
 
 @app.route('/state', methods=['POST'])
 def post_state():
-    try:
-        validity_start = parse(request.args.get('validity_start'))
-        validity_end = parse(request.args.get('validity_end'))
-    except TypeError:
-        raise BadRequest('Wrong format for validity start or validity end')
+    validity_start, validity_end = date_from_request('validity_start', 'validity_end')
     state = State.from_dict(request.json, precision_levels=PRECISION_LEVELS)
-    logging.debug("PARSED STATE")
-    logging.debug(state.territories[0])
     return str(datasource.add_state(state, validity_start, validity_end))
+
+
+@app.route('/state', methods=['PUT'])
+def put_state():
+    validity_start, validity_end = date_from_request('validity_start', 'validity_end')
+    state = State.from_dict(request.json, precision_levels=PRECISION_LEVELS)
+    return str(datasource.edit_state(state, validity_start, validity_end))
 
 
 @app.route('/land', methods=['POST'])
@@ -102,16 +98,29 @@ def get_land():
 
 @app.route('/state_from_territory/<territory_id>', methods=["GET"])
 def get_state_from_territory(territory_id):
-    try:
-        date = parse(request.args.get('date'))
-    except TypeError:
-        raise BadRequest('date param not valid')
+    date = date_from_request('date')
     return jsonify(datasource.get_state_from_territory(int(territory_id), date))
 
 
 @app.route('/', methods=['GET'])
 def redirectDoc():
     return redirect(API_DOC_URL)
+
+
+def date_from_request(*identifiers):
+    res = []
+    try:
+        for id in identifiers:
+            res.append(parse(request.args.get(id)))
+    except TypeError:
+        if request.args.get(id)==None:
+            raise BadRequest("Missing parameter : "+id)
+        else :
+            raise BadRequest('Wrong format for '+id+' : '+request.args.get(id))
+    if len(res) == 1:
+        return res[0]
+    else:
+        return res
 
 
 def extract_map_request():

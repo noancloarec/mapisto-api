@@ -23,7 +23,7 @@ class PostgreSQLDataSource() :
         conn = self.open_connection()
         cursor = conn.cursor()
         cursor.execute('''
-        SELECT states.state_id, color, name, d_path, territory_id
+        SELECT states.state_id, color, name, d_path, territory_id, state_names.validity_start, state_names.validity_end
         FROM states 
             INNER  JOIN territories ON states.state_id=territories.state_id 
             INNER JOIN state_names ON state_names.state_id=states.state_id 
@@ -45,9 +45,12 @@ class PostgreSQLDataSource() :
         current_state_id = None
         res = []
         for row in records:
-            (state_id, color, name, d_path, territory_id) = row
+            (state_id, color, name, d_path, territory_id, validity_start, validity_end) = row
             if current_state_id != state_id :
-                current_state = State(state_id, name, [Territory(territory_id, representations=[TerritoryShape(d_path)])], color)
+                current_state = State(state_id, name, [Territory(territory_id, representations=[TerritoryShape(d_path)])], color,
+                 validity_start=validity_start.isoformat(),
+                 validity_end=validity_end.isoformat()
+                 )
                 current_state_id = state_id
                 res.append(current_state)
             else :
@@ -73,7 +76,7 @@ class PostgreSQLDataSource() :
         if len(records)==0:
             raise NotFound("Territory does not exist or does not have a state representation at this time")
         (state_id, name, validity_start, validity_end, color) = records[0]
-        return State(state_id, name, color=color, validity_start=validity_start, validity_end=validity_end)
+        return State(state_id, name, color=color, validity_start=validity_start.isoformat(), validity_end=validity_end.isoformat())
 
     def add_state(self, state:State, validity_start:datetime, validity_end:datetime):
         try:
@@ -114,6 +117,24 @@ class PostgreSQLDataSource() :
         except Exception as e:
             conn.rollback()
             raise e
+
+    def edit_state(self, state:State, validity_start, validity_end):
+        conn = self.open_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE state_names SET name=%s
+            WHERE state_id=%s AND validity_start = %s AND validity_end=%s
+        ''', (state.name, state.state_id, validity_start.isoformat(), validity_end.isoformat()))
+        rowcount = cursor.rowcount
+        conn.commit()
+        cursor.close()
+        if rowcount==1:
+            return state.state_id
+        elif rowcount > 1:
+            raise InternalServerError(f"Several tuples found for ({state.state_id}, {validity_start.isoformat()} ,  {validity_end.isoformat()})")
+        else:
+            raise NotFound(f"No state found for ({state.state_id}, {validity_start.isoformat()} ,  {validity_end.isoformat()})")
+
     
     def get_land(self, precision:float, bbmin_x, bbmax_x, bbmin_y, bbmax_y):
         conn = self.open_connection()

@@ -169,6 +169,38 @@ paths:
           description: State was correctly added
         "400":
           description: Bad Request
+    put:
+      tags:
+        - State
+      parameters:
+        - name: validity_start
+          in: query
+          required: true
+          schema:
+            type: string
+            format: datetime
+          example: "1918-01-01T00:00:00Z"
+        - name: validity_end
+          in: query
+          required: true
+          schema:
+            type: string
+            format: datetime
+          example: "1919-01-01T00:00:00Z"
+      summary : If a match (id, validity_start, validity_end) is found in db, changes the name of the state
+      requestBody :
+        description: The state to which the name can be modified
+        required : true
+        content :
+          application/json:
+            schema :
+              $ref : "#/components/schemas/State"
+      responses:
+        "200" :
+          description : "The state was modified"
+        "404" : 
+          description: tuple (state_id, validity_start, validity_end) not found
+
   /state_from_territory/{territory_id}:
     get:
       tags : 
@@ -206,6 +238,14 @@ components:
         state_id:
           type: integer
           example: 1
+        validity_start:
+          type: string
+          format: datetime
+          example: "1918-01-01T00:00:00Z"
+        validity_end:
+          type: string
+          format: datetime
+          example: "1919-01-01T00:00:00Z"
         name:
           type: string
           example: Austria-Hungary
@@ -227,6 +267,15 @@ components:
         d_path:
           type: string
           example: "M150 0 L75 200 L225 200 Z"
+        validity_start:
+          type: string
+          format: datetime
+          example: "1918-01-01T00:00:00Z"
+        validity_end:
+          type: string
+          format: datetime
+          example: "1919-01-01T00:00:00Z"
+
     LandShape:
       description: Representation of a land map 
       type: object
