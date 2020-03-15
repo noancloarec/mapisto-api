@@ -5,13 +5,16 @@ from .TerritoryShape import TerritoryShape
 
 
 class Territory:
-    def __init__(self, territory_id, representations: list,  min_x=None, max_x=None, min_y=None, max_y=None):
+    def __init__(self, territory_id, representations: list,  min_x=None, max_x=None, min_y=None, max_y=None, validity_start=None, validity_end=None):
         self.territory_id = territory_id
         self.representations = representations
         self.min_x = min_x
         self.max_x = max_x
         self.min_y = min_y
         self.max_y = max_y
+        self.validity_end = validity_end
+        self.validity_start = validity_start
+
 
     @staticmethod
     def from_dict(json_dict, precision_levels):

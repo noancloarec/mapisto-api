@@ -31,7 +31,9 @@ class MapistoObjectsEncoder(JSONEncoder):
                     "A territory should not have more or less than 1 representation for jsonify")
             return {
                 'territory_id': obj.territory_id,
-                'd_path': obj.representations[0].d_path
+                'd_path': obj.representations[0].d_path,
+                'validity_start' : obj.validity_start,
+                'validity_end' : obj.validity_end
 
             }
         if isinstance(obj, Land):

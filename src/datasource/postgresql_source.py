@@ -9,21 +9,22 @@ from resources.Land import Land
 from resources.LandShape import LandShape
 from werkzeug.exceptions import InternalServerError, NotFound
 
-class PostgreSQLDataSource() :
-    def open_connection(self) :
+
+class PostgreSQLDataSource():
+    def open_connection(self):
         return psycopg2.connect(
-            database=os.environ['MAPISTO_DB_NAME'], 
-            user=os.environ['MAPISTO_DB_USER'], 
-            password=os.environ['MAPISTO_DB_PASSWORD'], 
-            host=os.environ['MAPISTO_DB_HOST'], 
+            database=os.environ['MAPISTO_DB_NAME'],
+            user=os.environ['MAPISTO_DB_USER'],
+            password=os.environ['MAPISTO_DB_PASSWORD'],
+            host=os.environ['MAPISTO_DB_HOST'],
             port=os.environ['MAPISTO_DB_PORT'],
             options='-c search_path=mapisto')
 
-    def get_states(self, time:datetime, precision:float, bbmin_x, bbmax_x, bbmin_y, bbmax_y):
+    def get_states(self, time: datetime, precision: float, bbmin_x, bbmax_x, bbmin_y, bbmax_y):
         conn = self.open_connection()
         cursor = conn.cursor()
         cursor.execute('''
-        SELECT states.state_id, color, name, d_path, territory_id, state_names.validity_start, state_names.validity_end
+        SELECT states.state_id, color, name, d_path, territory_id, state_names.validity_start, state_names.validity_end, territories.validity_start, territories.validity_end
         FROM states 
             INNER  JOIN territories ON states.state_id=territories.state_id 
             INNER JOIN state_names ON state_names.state_id=states.state_id 
@@ -45,19 +46,26 @@ class PostgreSQLDataSource() :
         current_state_id = None
         res = []
         for row in records:
-            (state_id, color, name, d_path, territory_id, validity_start, validity_end) = row
-            if current_state_id != state_id :
-                current_state = State(state_id, name, [Territory(territory_id, representations=[TerritoryShape(d_path)])], color,
-                 validity_start=validity_start.isoformat(),
-                 validity_end=validity_end.isoformat()
-                 )
+            (state_id, color, name, d_path, territory_id, state_validity_start,
+             state_validity_end, territory_validity_start, territory_validity_end) = row
+            territory = Territory(
+                territory_id,
+                representations=[TerritoryShape(d_path)],
+                validity_start=territory_validity_start.isoformat(),
+                validity_end=territory_validity_end.isoformat()
+            )
+            if current_state_id != state_id:
+                current_state = State(state_id, name, [territory], color,
+                                      validity_start=state_validity_start.isoformat(),
+                                      validity_end=state_validity_end.isoformat()
+                                      )
                 current_state_id = state_id
                 res.append(current_state)
-            else :
-                current_state.territories.append(Territory(territory_id, representations=[TerritoryShape(d_path)]))
+            else:
+                current_state.territories.append(territory)
         return res
 
-    def get_state_from_territory(self, territory_id:int, time:datetime):
+    def get_state_from_territory(self, territory_id: int, time: datetime):
         conn = self.open_connection()
         cursor = conn.cursor()
         cursor.execute('''
@@ -68,35 +76,39 @@ class PostgreSQLDataSource() :
         WHERE 
             territories.territory_id = %s 
             AND  state_names.validity_start <= %s AND state_names.validity_end > %s
-        ''', [territory_id, time.isoformat(), time.isoformat()] )
+        ''', [territory_id, time.isoformat(), time.isoformat()])
         records = cursor.fetchall()
         conn.close()
         if len(records) > 1:
-            raise InternalServerError("Several state names found for 1 territory and 1 time. Maybe 2 state_names overlap in time")
-        if len(records)==0:
-            raise NotFound("Territory does not exist or does not have a state representation at this time")
+            raise InternalServerError(
+                "Several state names found for 1 territory and 1 time. Maybe 2 state_names overlap in time")
+        if len(records) == 0:
+            raise NotFound(
+                "Territory does not exist or does not have a state representation at this time")
         (state_id, name, validity_start, validity_end, color) = records[0]
         return State(state_id, name, color=color, validity_start=validity_start.isoformat(), validity_end=validity_end.isoformat())
 
-    def add_state(self, state:State, validity_start:datetime, validity_end:datetime):
+    def add_state(self, state: State, validity_start: datetime, validity_end: datetime):
         try:
             conn = self.open_connection()
             with conn.cursor() as curs:
-                curs.execute('INSERT INTO states VALUES(default) RETURNING state_id')
+                curs.execute(
+                    'INSERT INTO states VALUES(default) RETURNING state_id')
                 state_id = curs.fetchone()[0]
                 curs.execute(
                     'INSERT INTO state_names(name, state_id, validity_start, validity_end, color) VALUES(%s, %s, %s, %s, %s)',
-                    (state.name, state_id, validity_start.isoformat(), validity_end.isoformat(), state.color)
+                    (state.name, state_id, validity_start.isoformat(),
+                     validity_end.isoformat(), state.color)
                 )
                 for territory in state.territories:
                     curs.execute(
-                        'INSERT INTO territories(state_id, validity_start, validity_end, min_x, max_x, min_y, max_y) VALUES(%s, %s, %s, %s, %s, %s, %s) RETURNING territory_id', 
+                        'INSERT INTO territories(state_id, validity_start, validity_end, min_x, max_x, min_y, max_y) VALUES(%s, %s, %s, %s, %s, %s, %s) RETURNING territory_id',
                         (
                             state_id,
-                            validity_start.isoformat(), 
-                            validity_end.isoformat(), 
-                            territory.min_x, 
-                            territory.max_x, 
+                            validity_start.isoformat(),
+                            validity_end.isoformat(),
+                            territory.min_x,
+                            territory.max_x,
                             territory.min_y,
                             territory.max_y
                         )
@@ -118,7 +130,7 @@ class PostgreSQLDataSource() :
             conn.rollback()
             raise e
 
-    def edit_state(self, state:State, validity_start, validity_end):
+    def edit_state(self, state: State, validity_start, validity_end):
         conn = self.open_connection()
         cursor = conn.cursor()
         cursor.execute('''
@@ -128,15 +140,16 @@ class PostgreSQLDataSource() :
         rowcount = cursor.rowcount
         conn.commit()
         cursor.close()
-        if rowcount==1:
+        if rowcount == 1:
             return state.state_id
         elif rowcount > 1:
-            raise InternalServerError(f"Several tuples found for ({state.state_id}, {validity_start.isoformat()} ,  {validity_end.isoformat()})")
+            raise InternalServerError(
+                f"Several tuples found for ({state.state_id}, {validity_start.isoformat()} ,  {validity_end.isoformat()})")
         else:
-            raise NotFound(f"No state found for ({state.state_id}, {validity_start.isoformat()} ,  {validity_end.isoformat()})")
+            raise NotFound(
+                f"No state found for ({state.state_id}, {validity_start.isoformat()} ,  {validity_end.isoformat()})")
 
-    
-    def get_land(self, precision:float, bbmin_x, bbmax_x, bbmin_y, bbmax_y):
+    def get_land(self, precision: float, bbmin_x, bbmax_x, bbmin_y, bbmax_y):
         conn = self.open_connection()
         cursor = conn.cursor()
         cursor.execute('''
@@ -150,22 +163,22 @@ class PostgreSQLDataSource() :
                 OR %s < lands.min_y
                 OR lands.max_y < %s
             )
-        ''', 
-            (precision, bbmax_x, bbmin_x, bbmax_y, bbmin_y)
-        )
+        ''',
+                       (precision, bbmax_x, bbmin_x, bbmax_y, bbmin_y)
+                       )
         records = cursor.fetchall()
         conn.close()
         return [Land(row[0], [LandShape(row[1])]) for row in records]
 
-    def add_land(self, land:Land):
+    def add_land(self, land: Land):
         try:
             conn = self.open_connection()
             with conn.cursor() as curs:
                 curs.execute(
-                    'INSERT INTO lands(min_x, max_x, min_y, max_y) VALUES(%s, %s, %s, %s) RETURNING land_id', 
+                    'INSERT INTO lands(min_x, max_x, min_y, max_y) VALUES(%s, %s, %s, %s) RETURNING land_id',
                     (
-                        land.min_x, 
-                        land.max_x, 
+                        land.min_x,
+                        land.max_x,
                         land.min_y,
                         land.max_y
                     )
