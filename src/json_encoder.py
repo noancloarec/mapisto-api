@@ -3,6 +3,7 @@ from resources.State import State
 from resources.Land import Land
 import logging
 from resources.Territory import Territory
+from resources.BoundingBox import BoundingBox
 from werkzeug.exceptions import InternalServerError
 
 
@@ -20,6 +21,8 @@ class MapistoObjectsEncoder(JSONEncoder):
             res['validity_start'] = obj.validity_start
         if hasattr(obj, 'validity_end') and obj.validity_end is not None:
             res['validity_end'] = obj.validity_end
+        if hasattr(obj, 'bounding_box') and obj.validity_end is not None:
+            res['bounding_box'] = obj.bounding_box
         return res
 
     def default(self, obj):
@@ -44,5 +47,12 @@ class MapistoObjectsEncoder(JSONEncoder):
                 'land_id': obj.land_id,
                 'd_path': obj.representations[0].d_path
 
+            }
+        if isinstance(obj, BoundingBox):
+            return {
+                "x" : obj.x ,
+                "y" : obj.y ,
+                "width" : obj.width ,
+                "height" : obj.height 
             }
         return super(MapistoObjectsEncoder, self).default(obj)

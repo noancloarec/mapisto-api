@@ -7,6 +7,7 @@ from resources.Territory import Territory
 from resources.TerritoryShape import TerritoryShape
 from resources.Land import Land
 from resources.LandShape import LandShape
+from resources.BoundingBox import BoundingBox
 from werkzeug.exceptions import InternalServerError, NotFound
 
 
@@ -64,6 +65,36 @@ class PostgreSQLDataSource():
             else:
                 current_state.territories.append(territory)
         return res
+
+    def get_state(self, state_id: int, time: datetime, precision: int):
+        conn = self.open_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+        SELECT states.state_id, color, name, state_names.validity_start, state_names.validity_end, MIN(min_x), MIN(min_y), MAX(max_x), MAX(max_y)
+        FROM states
+            INNER  JOIN territories ON states.state_id=territories.state_id
+            INNER JOIN state_names ON state_names.state_id=states.state_id
+            NATURAL JOIN territories_shapes
+        WHERE 
+            states.state_id=%s 
+            AND
+            territories.validity_start <= %s AND territories.validity_end > %s
+            AND  state_names.validity_start <= %s AND state_names.validity_end > %s
+            AND precision_in_km=%s
+        GROUP BY states.state_id, color, state_names.name, state_names.validity_start, state_names.validity_end
+        ''', [state_id] + [time.isoformat()] * 4 + [precision])
+        records = cursor.fetchall()
+        conn.close()
+        if len(records) > 1:
+            raise InternalServerError(
+                "Several state names found for 1 id and time. Maybe 2 state_names overlap in time")
+        if len(records) == 0:
+            raise NotFound(
+                f"State no {state_id} not found on the {time.isoformat()} ")
+        (state_id, color, name, validity_start, validity_end,
+         min_x, min_y, max_x, max_y) = records[0]
+        bbox = BoundingBox(min_x, min_y, max_x-min_x, max_y-min_y)
+        return State(state_id, name, color=color, validity_start=validity_start.isoformat(), validity_end=validity_end.isoformat(), bounding_box=bbox)
 
     def get_state_from_territory(self, territory_id: int, time: datetime):
         conn = self.open_connection()

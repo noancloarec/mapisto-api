@@ -101,6 +101,11 @@ def get_state_from_territory(territory_id):
     date = date_from_request('date')
     return jsonify(datasource.get_state_from_territory(int(territory_id), date))
 
+@app.route('/state/<state_id>', methods=["GET"])
+def get_state_by_id(state_id):
+    date = date_from_request('date')
+    return jsonify(datasource.get_state(int(state_id), date, max(PRECISION_LEVELS)))
+
 
 @app.route('/', methods=['GET'])
 def redirectDoc():
