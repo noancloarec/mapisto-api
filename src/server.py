@@ -104,7 +104,7 @@ def get_state_from_territory(territory_id):
 @app.route('/state/<state_id>', methods=["GET"])
 def get_state_by_id(state_id):
     date = date_from_request('date')
-    return jsonify(datasource.get_state(int(state_id), date, max(PRECISION_LEVELS)))
+    return jsonify(datasource.get_state(int(state_id), date, min(PRECISION_LEVELS))) # min precision to catch even the smallest territories
 
 
 @app.route('/', methods=['GET'])
