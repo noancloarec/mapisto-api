@@ -1,8 +1,11 @@
 from .helper import fill_optional_fields
 from .Territory import Territory
 from .BoundingBox import BoundingBox
+from datetime import datetime
 class State:
     def __init__(self, state_id,name, territories=None, color=None, validity_start=None, validity_end=None, bounding_box:BoundingBox=None):
+        assert isinstance(validity_start, datetime) or validity_start is None
+        assert isinstance(validity_end, datetime) or validity_end is None
         self.state_id = state_id
         self.territories = territories
         self.color = color
@@ -10,6 +13,9 @@ class State:
         self.validity_end = validity_end
         self.validity_start = validity_start
         self.bounding_box = bounding_box
+
+    def __str__(self):
+        return f"[{str(self.validity_start)}, {str(self.validity_end)}[ : {self.name}(no{self.state_id})"
     
     @staticmethod
     def from_dict(json_dict, precision_levels):

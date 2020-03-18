@@ -3,7 +3,8 @@ WORKDIR /app
 RUN apt-get update
 RUN apt-get install -y libgeos-dev
 ADD requirements.txt .
-RUN pip install -r requirements.txt 
+RUN pip install -r requirements.txt
+RUN pip install pytz
 WORKDIR /app/src
 ENV FLASK_APP=server.py
 CMD flask run -h 0.0.0.0

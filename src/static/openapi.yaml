@@ -257,6 +257,106 @@ paths:
           description: State info retrieved
         "404" :
           description: Territory not found
+  /state/{state_id}/concurrent_states:
+    get:
+      tags:
+        - State
+      summary: "
+      Returns, for a state, represented by (state_id), and a possible extend period, all (state_id, state_names) which have a similar name
+      Supposes every state has only 1 state representation
+      "
+      parameters :
+        - name: state_id
+          in : path
+          description: The id of the state to be extended
+          required : true
+          schema :
+            $ref : "#/components/schemas/State/properties/state_id"
+          example : 1
+        - name: newStart
+          in: query
+          required: true
+          description: The start of the new period to consider
+          schema:
+            type: string
+            format: datetime
+          example: "1918-01-01T00:00:00Z"
+        - name: newEnd
+          in: query
+          required: true
+          description: The end of the new period to consider
+          schema:
+            type: string
+            format: datetime
+          example: "1920-01-01T00:00:00Z"
+      responses:
+        "200" :
+          content:
+            application/json :
+              schema : 
+                type : array
+                items : 
+                  $ref : "#/components/schemas/State"
+          description: A list of the state representations that will conflict or could be linked
+        "404" :
+          description: The state state_id was not found at the date date
+  /state/{state_id}/extend:
+    put:
+      tags:
+        - State
+      summary: "
+      Extends a state period to the new period provided
+      Automatically merges it with the states which have the same name within the period. And remove them
+      Also merges the state which are provided in parameter, and remove them
+      "
+      parameters :
+        - name: state_id
+          in : path
+          description: The id of the state to extend
+          required : true
+          schema :
+            $ref : "#/components/schemas/State/properties/state_id"
+          example : 1
+        - name: newStart
+          in: query
+          required: true
+          description: The start of the new period to consider
+          schema:
+            type: string
+            format: datetime
+          example: "1918-01-01T00:00:00Z"
+        - name: newEnd
+          in: query
+          required: true
+          description: The end of the new period to consider
+          schema:
+            type: string
+            format: datetime
+          example: "1920-01-01T00:00:00Z"
+      requestBody :
+        description: A list of states to be merged with the extended state
+        content:
+          application/json:
+            schema :
+              type: array
+              items : 
+                type : number
+      responses:
+        "200" :
+          content:
+            application/json :
+              schema : 
+                type : array
+                items : 
+                  $ref : "#/components/schemas/State"
+          description: A list of the state representations that will conflict or could be linked
+        "404" :
+          description: The state state_id was not found within the period
+        "400" : 
+          description: "
+          The period provided does not include the existing one. Cannot extend
+          One of the states to be merged has a period not included in the provided period
+          "
 
 
 components:

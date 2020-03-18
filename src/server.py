@@ -1,16 +1,19 @@
-from flask import Flask, send_from_directory, jsonify, request, redirect
-from flask_swagger_ui import get_swaggerui_blueprint
-from datetime import datetime
-from werkzeug.exceptions import BadRequest
-from flask_cors import CORS
+import logging
 import os
+from datetime import datetime
+from pprint import pprint
+
+from dateutil.parser import parse
+from flask import Flask, jsonify, redirect, request, send_from_directory
+from flask_cors import CORS
+from flask_swagger_ui import get_swaggerui_blueprint
+from werkzeug.exceptions import BadRequest, InternalServerError, HTTPException
 
 from datasource.postgresql_source import PostgreSQLDataSource
 from json_encoder import MapistoObjectsEncoder
-from resources.State import State
 from resources.Land import Land
-from dateutil.parser import parse
-import logging
+import pytz
+from resources.State import State
 
 PRECISION_LEVELS = [float(prec)
                     for prec in os.environ['PRECISION_LEVELS'].split(' ')]
@@ -64,14 +67,16 @@ def get_states():
 
 @app.route('/state', methods=['POST'])
 def post_state():
-    validity_start, validity_end = date_from_request('validity_start', 'validity_end')
+    validity_start, validity_end = date_from_request(
+        'validity_start', 'validity_end')
     state = State.from_dict(request.json, precision_levels=PRECISION_LEVELS)
     return str(datasource.add_state(state, validity_start, validity_end))
 
 
 @app.route('/state', methods=['PUT'])
 def put_state():
-    validity_start, validity_end = date_from_request('validity_start', 'validity_end')
+    validity_start, validity_end = date_from_request(
+        'validity_start', 'validity_end')
     state = State.from_dict(request.json, precision_levels=PRECISION_LEVELS)
     return str(datasource.edit_state(state, validity_start, validity_end))
 
@@ -101,11 +106,23 @@ def get_state_from_territory(territory_id):
     date = date_from_request('date')
     return jsonify(datasource.get_state_from_territory(int(territory_id), date))
 
+
 @app.route('/state/<state_id>', methods=["GET"])
 def get_state_by_id(state_id):
     date = date_from_request('date')
-    return jsonify(datasource.get_state(int(state_id), date, min(PRECISION_LEVELS))) # min precision to catch even the smallest territories
+    # min precision to catch even the smallest territories
+    return jsonify(datasource.get_state(int(state_id), date, min(PRECISION_LEVELS)))
 
+
+@app.route('/state/<state_id>/concurrent_states', methods=["GET"])
+def get_concurrent_states(state_id):
+    start, end = date_from_request('newStart', 'newEnd')
+    return jsonify(datasource.get_concurrent_states(state_id, start, end))
+
+@app.route('/state/<state_id>/extend', methods=['PUT'])
+def extend_state(state_id):
+    start, end = date_from_request('newStart', 'newEnd')
+    return jsonify(datasource.extend_state(state_id, start, end, request.json))
 
 @app.route('/', methods=['GET'])
 def redirectDoc():
@@ -116,11 +133,11 @@ def date_from_request(*identifiers):
     res = []
     try:
         for id in identifiers:
-            res.append(parse(request.args.get(id)))
+            res.append(parse(request.args.get(id)).replace(tzinfo=pytz.UTC))
     except TypeError:
-        if request.args.get(id)==None:
+        if request.args.get(id) == None:
             raise BadRequest("Missing parameter : "+id)
-        else :
+        else:
             raise BadRequest('Wrong format for '+id+' : '+request.args.get(id))
     if len(res) == 1:
         return res[0]
@@ -135,3 +152,15 @@ def extract_map_request():
     bbmin_y = int(float(request.args.get('min_y'))),
     bbmax_y = int(float(request.args.get('max_y')))
     return (precision, bbmin_x, bbmax_x, bbmin_y, bbmax_y)
+
+
+@app.errorhandler(HTTPException)
+def handle_http(e: HTTPException):
+    return e.description, e.code
+
+
+@app.errorhandler(Exception)
+def handle_500(e):
+    logging.info("SERVER ERROR caught : ")
+    logging.exception(e)
+    return "Internal Server Error", 500

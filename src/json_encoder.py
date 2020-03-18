@@ -8,7 +8,7 @@ from werkzeug.exceptions import InternalServerError
 
 
 class MapistoObjectsEncoder(JSONEncoder):
-    def mapState(self, obj):
+    def mapState(self, obj:State):
         res = {
             'state_id': obj.state_id,
             'name': obj.name
@@ -18,10 +18,10 @@ class MapistoObjectsEncoder(JSONEncoder):
         if hasattr(obj, 'color') and obj.color is not None:
             res['color'] = obj.color
         if hasattr(obj, 'validity_start') and obj.validity_start is not None:
-            res['validity_start'] = obj.validity_start
+            res['validity_start'] = obj.validity_start.isoformat()
         if hasattr(obj, 'validity_end') and obj.validity_end is not None:
-            res['validity_end'] = obj.validity_end
-        if hasattr(obj, 'bounding_box') and obj.validity_end is not None:
+            res['validity_end'] = obj.validity_end.isoformat()
+        if hasattr(obj, 'bounding_box') and obj.bounding_box is not None:
             res['bounding_box'] = obj.bounding_box
         return res
 

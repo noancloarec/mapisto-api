@@ -8,7 +8,9 @@ from resources.TerritoryShape import TerritoryShape
 from resources.Land import Land
 from resources.LandShape import LandShape
 from resources.BoundingBox import BoundingBox
-from werkzeug.exceptions import InternalServerError, NotFound
+import logging
+from werkzeug.exceptions import InternalServerError, NotFound, BadRequest
+import pytz
 
 
 class PostgreSQLDataSource():
@@ -52,13 +54,13 @@ class PostgreSQLDataSource():
             territory = Territory(
                 territory_id,
                 representations=[TerritoryShape(d_path)],
-                validity_start=territory_validity_start.isoformat(),
-                validity_end=territory_validity_end.isoformat()
+                validity_start=territory_validity_start,
+                validity_end=territory_validity_end
             )
             if current_state_id != state_id:
                 current_state = State(state_id, name, [territory], color,
-                                      validity_start=state_validity_start.isoformat(),
-                                      validity_end=state_validity_end.isoformat()
+                                      validity_start=state_validity_start,
+                                      validity_end=state_validity_end
                                       )
                 current_state_id = state_id
                 res.append(current_state)
@@ -94,7 +96,7 @@ class PostgreSQLDataSource():
         (state_id, color, name, validity_start, validity_end,
          min_x, min_y, max_x, max_y) = records[0]
         bbox = BoundingBox(min_x, min_y, max_x-min_x, max_y-min_y)
-        return State(state_id, name, color=color, validity_start=validity_start.isoformat(), validity_end=validity_end.isoformat(), bounding_box=bbox)
+        return State(state_id, name, color=color, validity_start=validity_start, validity_end=validity_end, bounding_box=bbox)
 
     def get_state_from_territory(self, territory_id: int, time: datetime):
         conn = self.open_connection()
@@ -229,4 +231,170 @@ class PostgreSQLDataSource():
                 return land_id
         except Exception as e:
             conn.rollback()
+            raise e
+
+    def check_extend_request_validity(self, to_extend: int, newStart: datetime, newEnd: datetime):
+        conn = self.open_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT name, validity_start, validity_end FROM state_names 
+            WHERE 
+            state_id=%s 
+            AND validity_start < %s
+            AND validity_end > %s
+        ''',
+                       (to_extend, newEnd, newStart)
+                       )
+        records = cursor.fetchall()
+        if len(records) > 1:
+            raise InternalServerError(
+                f"Several state_names were found for {to_extend}({records[0][0]}) : {str(records)}")
+        elif not len(records):
+            raise NotFound(
+                f"State no {to_extend} has no representations between {str(newStart)} and {str(newEnd)}")
+        else:
+            name, validity_start, validity_end = records[0]
+            if validity_start.replace(tzinfo=pytz.UTC) < newStart or validity_end.replace(tzinfo=pytz.UTC) > newEnd:
+                raise BadRequest(
+                    f"The state you try to extend has a period ({validity_start}, {validity_end}) out of the the extended period you provide ({newStart}, {newEnd})")
+            return name
+        conn.close()
+
+    def get_concurrent_states(self, to_extend: int, newStart: datetime, newEnd: datetime):
+        to_extend_name = self.check_extend_request_validity(
+            to_extend, newStart, newEnd)
+        conn = self.open_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT state_id, name, validity_start, validity_end FROM state_names 
+            WHERE 
+            name!='' 
+            AND state_id !=%s
+            AND validity_start < %s
+            AND validity_end > %s
+            AND (
+                lower(name) LIKE(CONCAT('%%', lower(%s), '%%')) 
+                OR lower(%s) LIKE (CONCAT('%%', lower(name), '%%'))
+                )
+        ''',
+                       (to_extend, newEnd, newStart,
+                        to_extend_name, to_extend_name)
+                       )
+        records = cursor.fetchall()
+        conn.close()
+        return [State(row[0], name=row[1], validity_start=row[2], validity_end=row[3]) for row in records]
+
+    def get_mandatory_merged_states(self, to_extend_id:int, to_extend_name: str, newStart: datetime, newEnd: datetime):
+        conn = self.open_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT state_id, name, validity_start, validity_end FROM state_names 
+            WHERE 
+            state_id!=%s
+            AND lower(name) = lower(%s)
+            AND validity_start < %s
+            AND validity_end > %s
+        ''',
+                       (to_extend_id ,to_extend_name, newEnd, newStart)
+                       )
+        records = cursor.fetchall()
+        conn.close()
+        return [State(row[0], name=row[1], validity_start=row[2], validity_end=row[3]) for row in records]
+
+    def state_is_within_period(self, state: State, start: datetime, end: datetime):
+        return state.validity_start.replace(tzinfo=pytz.UTC) >= start and state.validity_end.replace(tzinfo=pytz.UTC) <= end
+
+    def get_states_by_period(self, state_ids, start: datetime, end: datetime):
+        conn = self.open_connection()
+        cursor = conn.cursor()
+        logging.info(state_ids)
+        cursor.execute('''
+            SELECT state_id, name, validity_start, validity_end FROM state_names 
+            WHERE 
+            state_id IN %s
+            AND validity_start < %s
+            AND validity_end > %s
+        ''',
+                       (tuple(state_ids), end, start)
+                       )
+        records = cursor.fetchall()
+        conn.close()
+        return [State(row[0], name=row[1], validity_start=row[2], validity_end=row[3]) for row in records]
+
+    def extend_state(self, to_extend: int, newStart: datetime, newEnd: datetime, to_be_merged: list):
+        to_extend_name = self.check_extend_request_validity(
+            to_extend, newStart, newEnd)
+        to_reassign_mandatory = self.get_mandatory_merged_states(to_extend,
+            to_extend_name, newStart, newEnd)
+        mandatory_out_of_bounds = [
+            s for s in to_reassign_mandatory if not self.state_is_within_period(s, newStart, newEnd)]
+        if len(mandatory_out_of_bounds):
+            raise BadRequest(
+                f"Cannot extend : These states conflict because they have the same name and overlap with your extend period : {[str(s) for s in mandatory_out_of_bounds]}")
+        to_be_merged_optional = [state_id for state_id in to_be_merged if state_id not in map(lambda s:s.state_id, to_reassign_mandatory) ]
+        if len(to_be_merged_optional):
+            to_reassign_optional = self.get_states_by_period(to_be_merged, newStart, newEnd)
+            state_to_merge_not_found = [state_id for state_id in to_be_merged_optional if state_id not in map(lambda s: s.state_id, to_reassign_optional)]
+            if state_to_merge_not_found:
+                raise NotFound(f"Could not find the states to merge them : {state_to_merge_not_found} ")
+            logging.info(f"Optional found : {[str(s) for s in to_reassign_optional]}")
+            optional_out_of_bounds = [
+                s for s in to_reassign_optional if not self.state_is_within_period(s, newStart, newEnd)]
+            if len(optional_out_of_bounds):
+                raise BadRequest(
+                    f"Cannot extend : These states conflict because they overlap with your extend period : {[str(s) for s in optional_out_of_bounds]}")
+        else:
+            to_reassign_optional = []
+        logging.debug(f"Mandatory reassign ({len(to_reassign_mandatory)}) : ")
+        for state in to_reassign_mandatory:
+            logging.debug(state)
+        logging.debug(f"Optional reassign ({len(to_reassign_optional)}) : ")
+        for state in to_reassign_optional:
+            logging.debug(state)
+        # Actually performs the edit
+        try:
+            conn = self.open_connection()
+            with conn.cursor() as curs:
+                for to_reassign in to_reassign_mandatory + to_reassign_optional:
+                    logging.info(f"About to remove state {to_reassign}")
+                    curs.execute(
+                        """
+                        UPDATE territories 
+                        SET state_id=%s
+                        WHERE 
+                        state_id=%s
+                        AND validity_start>= %s
+                        AND validity_end <= %s
+                        """,
+                        (
+                            to_extend,
+                            to_reassign.state_id,
+                            to_reassign.validity_start,
+                            to_reassign.validity_end
+                        )
+                    )
+                    curs.execute(
+                        """
+                        DELETE FROM state_names 
+                        WHERE 
+                        state_id = %s
+                        AND validity_start=%s
+                        AND validity_end=%s
+                        """ , (to_reassign.state_id, to_reassign.validity_start, to_reassign.validity_end)
+                    )
+                    curs.execute('DELETE FROM states WHERE state_id=%s', (to_reassign.state_id,))
+                curs.execute("""
+                    UPDATE state_names
+                    SET validity_start=%s, validity_end=%s 
+                    WHERE 
+                        state_id=%s
+                        AND validity_start>=%s
+                        AND validity_end<=%s
+                """, (newStart, newEnd, to_extend, newStart, newEnd))
+                conn.commit()
+                conn.close()
+                return { "removed_states" : to_reassign_mandatory+to_reassign_optional}
+        except Exception as e:
+            conn.rollback()
+            logging.warning("Canceled transaction")
             raise e
