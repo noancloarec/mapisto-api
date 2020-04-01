@@ -201,34 +201,34 @@ paths:
         "404" : 
           description: tuple (state_id, validity_start, validity_end) not found
 
-  # /state_from_territory/{territory_id}:
-  #   get:
-  #     tags : 
-  #       - State
-  #     summary: Returns a state's information from a territory id
-  #     parameters:
-  #       - name : territory_id
-  #         in : path
-  #         required: true
-  #         schema :
-  #           $ref : "#/components/schemas/Territory/properties/territory_id"
-  #         example : 1
-  #       - name: date
-  #         in: query
-  #         required: true
-  #         schema:
-  #           type: string
-  #           format: datetime
-  #         example: "1918-02-01T15:00:00Z"
-  #     responses:
-  #       "200" :
-  #         content:
-  #           application/json :
-  #             schema : 
-  #               $ref : "#/components/schemas/State"
-  #         description: State info retrieved
-  #       "404" :
-  #         description: Territory not found
+  /state/from_territory/{territory_id}:
+    get:
+      tags : 
+        - State
+      summary: Returns a state's information from a territory id
+      parameters:
+        - name : territory_id
+          in : path
+          required: true
+          schema :
+            $ref : "#/components/schemas/Territory/properties/territory_id"
+          example : 1
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: datetime
+          example: "1918-02-01T15:00:00Z"
+      responses:
+        "200" :
+          content:
+            application/json :
+              schema : 
+                $ref : "#/components/schemas/State"
+          description: State info retrieved
+        "404" :
+          description: Territory not found
   /state/{state_id}:
     get:
       tags : 
@@ -357,6 +357,120 @@ paths:
           The period provided does not include the existing one. Cannot extend
           One of the states to be merged has a period not included in the provided period
           "
+  /territory/{territory_id}/concurrent_territories:
+    get:
+      tags:
+        - Territories
+      summary: "
+      Returns, for a territory, the coordinates of its supposed capited and a possible extend period, all territories across time which could conflict (i.e. lay on the capital)"
+      parameters :
+        - name: territory_id
+          in : path
+          description: The id of the state to be extended
+          required : true
+          schema :
+            $ref : "#/components/schemas/Territory/properties/territory_id"
+          example : 31
+        - name: newStart
+          in: query
+          required: true
+          description: The start of the new period to consider
+          schema:
+            type: string
+            format: datetime
+          example: "1918-01-01T00:00:00Z"
+        - name: newEnd
+          in: query
+          required: true
+          description: The end of the new period to consider
+          schema:
+            type: string
+            format: datetime
+          example: "1923-01-01T00:00:00Z"
+        - name : capital_x
+          in: query
+          required: true
+          description : The X coordinate of the capital
+          example : 1084
+          schema :
+            type: number
+        - name : capital_y
+          in: query
+          required: true
+          description : The Y coordinate of the capital
+          example : 386
+          schema :
+            type: number
+      responses:
+        "200" :
+          content:
+            application/json :
+              schema : 
+                type : object
+                properties:
+                  to_be_merged :
+                    type : array
+                    items : 
+                      $ref : "#/components/schemas/Territory"
+                    description: A list of territories, without path data, which will have to be merged if the territory period is extended
+                  conflicting_territory_start :
+                    $ref : "#/components/schemas/Territory"
+                  conflicting_territory_end :
+                    $ref : "#/components/schemas/Territory"
+          description : "The list of concurrent territories, and possible conclicts"
+        "404" :
+          description: The territory was not found at the date date
+        "400" :
+          description : The capital is not contained in the territory polygon 
+  /territory/{territory_id}/extend:
+    put:
+      tags:
+        - Territory
+      summary: "
+      Extends a territory period to the new period provided
+      Removes the territories specified by their ids in the query
+      "
+      parameters :
+        - name: territory_id
+          in : path
+          description: The id of the territory to extend
+          required : true
+          schema :
+            $ref : "#/components/schemas/Territory/properties/territory_id"
+          example : 1
+        - name: newStart
+          in: query
+          required: true
+          description: The start of the new period to consider
+          schema:
+            type: string
+            format: datetime
+          example: "1918-01-01T00:00:00Z"
+        - name: newEnd
+          in: query
+          required: true
+          description: The end of the new period to consider
+          schema:
+            type: string
+            format: datetime
+          example: "1920-01-01T00:00:00Z"
+      requestBody :
+        description: A list of territory ids to be removed
+        content:
+          application/json:
+            schema :
+              type: array
+              items : 
+                $ref : "#/components/schemas/Territory/properties/territory_id"
+      responses:
+        "200" :
+          content:
+            application/json :
+              schema : 
+                $ref : "#/components/schemas/Territory"
+          description: The updated territory
+        "404" :
+          description: One of the territories to extend or to remove was not found within the period
 
 
 components:
@@ -407,6 +521,10 @@ components:
           type: string
           format: datetime
           example: "1919-01-01T00:00:00Z"
+        bounding_box:
+          description: The territory's bounding box
+          $ref : "#/components/schemas/BoundingBox"
+
     LandShape:
       description: Representation of a land map 
       type: object

@@ -101,7 +101,7 @@ def get_land():
     )
 
 
-@app.route('/state_from_territory/<territory_id>', methods=["GET"])
+@app.route('/state/from_territory/<territory_id>', methods=["GET"])
 def get_state_from_territory(territory_id):
     date = date_from_request('date')
     return jsonify(datasource.get_state_from_territory(int(territory_id), date))
@@ -123,6 +123,19 @@ def get_concurrent_states(state_id):
 def extend_state(state_id):
     start, end = date_from_request('newStart', 'newEnd')
     return jsonify(datasource.extend_state(state_id, start, end, request.json))
+
+@app.route('/territory/<territory_id>/concurrent_territories', methods=["GET"])
+def get_concurrent_territories(territory_id):
+    start, end = date_from_request('newStart', 'newEnd')
+    x, y = (float(request.args.get('capital_x')) , float(request.args.get('capital_y')))
+    return jsonify(datasource.get_concurrent_territories(territory_id, start, end, x, y, min(PRECISION_LEVELS)))
+
+@app.route('/territory/<territory_id>/extend', methods=['PUT'])
+def extend_territory(territory_id) :
+    start, end = date_from_request('newStart', 'newEnd')
+    datasource.extend_territory(territory_id, start, end, request.json)
+    return jsonify(datasource.get_territory(territory_id))
+
 
 @app.route('/', methods=['GET'])
 def redirectDoc():

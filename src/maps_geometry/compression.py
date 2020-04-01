@@ -1,4 +1,4 @@
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, Point
 import xml.etree.ElementTree as ET
 from math import floor, log10
 import numpy as np
@@ -46,3 +46,8 @@ def remove_too_close_coord(polygon, min_distance):
     except ValueError:
         # When there are less than 3 points in res no polygon can be returned
         return None
+
+def path_contains_point(path, point):
+    x,y = point
+    pol = Polygon(parse_path(path).to_polygons()[0])
+    return pol.contains(Point(x, y))

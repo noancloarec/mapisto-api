@@ -8,12 +8,12 @@ from werkzeug.exceptions import InternalServerError
 
 
 class MapistoObjectsEncoder(JSONEncoder):
-    def mapState(self, obj:State):
+    def mapState(self, obj: State):
         res = {
             'state_id': obj.state_id,
             'name': obj.name
         }
-        if hasattr(obj, 'territories') and obj.territories is not None :
+        if hasattr(obj, 'territories') and obj.territories is not None:
             res['territories'] = obj.territories
         if hasattr(obj, 'color') and obj.color is not None:
             res['color'] = obj.color
@@ -25,20 +25,27 @@ class MapistoObjectsEncoder(JSONEncoder):
             res['bounding_box'] = obj.bounding_box
         return res
 
-    def default(self, obj):
+    def mapTerritory(self, obj: Territory):
+        res = {
+            'territory_id': obj.territory_id,
+            'validity_start': obj.validity_start.isoformat(),
+            'validity_end': obj.validity_end.isoformat(),
+            'bounding_box': obj.bounding_box,
+            'state_id' : obj.state_id
+        }
+        if obj.representations is not None and len(obj.representations):
+            if len(obj.representations) > 1:
+                raise InternalServerError(
+                    "A territory cannot have more than 1 representation for jsonify")
+            else:
+                res['d_path'] = obj.representations[0].d_path
+        return res
+
+    def default(self, obj):  # pylint: disable=E0202
         if isinstance(obj, State):
             return self.mapState(obj)
         if isinstance(obj, Territory):
-            if len(obj.representations) != 1:
-                raise InternalServerError(
-                    "A territory should not have more or less than 1 representation for jsonify")
-            return {
-                'territory_id': obj.territory_id,
-                'd_path': obj.representations[0].d_path,
-                'validity_start' : obj.validity_start,
-                'validity_end' : obj.validity_end
-
-            }
+            return self.mapTerritory(obj)
         if isinstance(obj, Land):
             if len(obj.representations) != 1:
                 raise InternalServerError(
@@ -50,9 +57,9 @@ class MapistoObjectsEncoder(JSONEncoder):
             }
         if isinstance(obj, BoundingBox):
             return {
-                "x" : obj.x ,
-                "y" : obj.y ,
-                "width" : obj.width ,
-                "height" : obj.height 
+                "x": obj.x,
+                "y": obj.y,
+                "width": obj.width,
+                "height": obj.height
             }
         return super(MapistoObjectsEncoder, self).default(obj)

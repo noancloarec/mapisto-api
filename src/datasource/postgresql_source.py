@@ -10,6 +10,7 @@ from resources.LandShape import LandShape
 from resources.BoundingBox import BoundingBox
 import logging
 from werkzeug.exceptions import InternalServerError, NotFound, BadRequest
+from maps_geometry.compression import path_contains_point
 import pytz
 
 
@@ -27,7 +28,20 @@ class PostgreSQLDataSource():
         conn = self.open_connection()
         cursor = conn.cursor()
         cursor.execute('''
-        SELECT states.state_id, color, name, d_path, territory_id, state_names.validity_start, state_names.validity_end, territories.validity_start, territories.validity_end
+        SELECT 
+            states.state_id, 
+            color,
+            name,
+            d_path,
+            territory_id,
+            state_names.validity_start,
+            state_names.validity_end,
+            territories.validity_start,
+            territories.validity_end,
+            territories.min_x,
+            territories.max_x,
+            territories.min_y,
+            territories.max_y
         FROM states 
             INNER  JOIN territories ON states.state_id=territories.state_id 
             INNER JOIN state_names ON state_names.state_id=states.state_id 
@@ -50,12 +64,14 @@ class PostgreSQLDataSource():
         res = []
         for row in records:
             (state_id, color, name, d_path, territory_id, state_validity_start,
-             state_validity_end, territory_validity_start, territory_validity_end) = row
+             state_validity_end, territory_validity_start, territory_validity_end,
+             min_x, max_x, min_y, max_y) = row
             territory = Territory(
                 territory_id,
                 representations=[TerritoryShape(d_path)],
                 validity_start=territory_validity_start,
-                validity_end=territory_validity_end
+                validity_end=territory_validity_end,
+                bounding_box=BoundingBox(min_x, min_y, max_x-min_x, max_y-min_y)
             )
             if current_state_id != state_id:
                 current_state = State(state_id, name, [territory], color,
@@ -119,7 +135,7 @@ class PostgreSQLDataSource():
             raise NotFound(
                 "Territory does not exist or does not have a state representation at this time")
         (state_id, name, validity_start, validity_end, color) = records[0]
-        return State(state_id, name, color=color, validity_start=validity_start.isoformat(), validity_end=validity_end.isoformat())
+        return State(state_id, name, color=color, validity_start=validity_start, validity_end=validity_end)
 
     def add_state(self, state: State, validity_start: datetime, validity_end: datetime):
         try:
@@ -345,12 +361,6 @@ class PostgreSQLDataSource():
                     f"Cannot extend : These states conflict because they overlap with your extend period : {[str(s) for s in optional_out_of_bounds]}")
         else:
             to_reassign_optional = []
-        logging.debug(f"Mandatory reassign ({len(to_reassign_mandatory)}) : ")
-        for state in to_reassign_mandatory:
-            logging.debug(state)
-        logging.debug(f"Optional reassign ({len(to_reassign_optional)}) : ")
-        for state in to_reassign_optional:
-            logging.debug(state)
         # Actually performs the edit
         try:
             conn = self.open_connection()
@@ -398,3 +408,103 @@ class PostgreSQLDataSource():
             conn.rollback()
             logging.warning("Canceled transaction")
             raise e
+
+    def get_concurrent_territories(self, territory_id, newStart, newEnd, capital_x, capital_y, precision):
+        self.check_territories_exist_within([territory_id], newStart, newEnd)
+        conn = self.open_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT territory_id, min_x, max_x, min_y, max_y, validity_start, validity_end, d_path, state_id
+            FROM territories NATURAL JOIN territories_shapes 
+            WHERE
+             territory_id!=%s
+             AND precision_in_km=%s 
+             AND min_x <= %s 
+             AND max_x >= %s 
+             AND min_y <= %s 
+             AND max_y >= %s 
+             AND validity_start < %s
+             AND validity_end > %s
+             ORDER BY validity_start
+            ''',
+                       (territory_id, precision, capital_x, capital_x, capital_y, capital_y,
+                        newEnd, newStart)
+                       )
+        records = cursor.fetchall()
+        conn.close()
+        territories = []
+        for row in records :
+            terr_id, min_x, max_x, min_y, max_y, validity_start, validity_end, d_path, state_id = row
+            territories.append(Territory(
+                terr_id, 
+                [TerritoryShape(d_path)] , 
+                BoundingBox(min_x, 
+                min_y, 
+                max_x-min_x, 
+                max_y-min_y), 
+                validity_start, 
+                validity_end,
+                state_id=state_id
+                ))
+
+        # Filter out the territories which do not contain the capital
+        territories = [territory for territory in territories if path_contains_point(territory.representations[0].d_path , (capital_x, capital_y))]
+
+        # Removes the d_path data to alleviate the json response
+        for territory in territories:
+            territory.representations = None
+        
+        return territories
+    
+    def check_territories_exist_within(self, territory_ids, newStart, newEnd) :
+        conn = self.open_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT territory_id
+            FROM territories
+            WHERE territory_id IN %s
+            AND validity_start >= %s
+            AND validity_end <= %s
+        ''', (tuple(territory_ids), newStart, newEnd))
+        terr_id_retrieved = list(map(lambda row : row[0] , cursor.fetchall()))
+        conn.close()
+        if len(terr_id_retrieved) != len(territory_ids):
+            raise NotFound(f"Territories no {[terr_id for terr_id in territory_ids if terr_id not in terr_id_retrieved]} do not exist within ({newStart.isoformat(), newEnd.isoformat()}) ")        
+
+    def extend_territory(self, to_extend: int, newStart: datetime, newEnd: datetime, to_be_removed: list):
+        self.check_territories_exist_within([to_extend]+to_be_removed, newStart, newEnd)
+        try:
+            conn = self.open_connection()
+            with conn.cursor() as curs:
+                curs.execute("""
+                    UPDATE territories
+                    SET validity_start=%s, validity_end=%s 
+                    WHERE 
+                        territory_id=%s
+                """, (newStart, newEnd, to_extend))
+                curs.execute("""
+                    DELETE FROM Territories_shapes
+                    WHERE territory_id IN %s
+                """, (tuple(to_be_removed),))
+                curs.execute("""
+                    DELETE FROM Territories
+                    WHERE territory_id in %s
+                """, (tuple(to_be_removed),))
+                conn.commit()
+                conn.close()
+                return True
+        except Exception as e:
+            conn.rollback()
+            logging.warning("Canceled transaction")
+            raise e
+    def get_territory(self, territory_id):
+        conn = self.open_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT territory_id, validity_start, validity_end, min_x, min_y, max_x, max_y, state_id
+            FROM territories
+            WHERE territory_id = %s
+        ''', (territory_id ,))
+        territory_id, validity_start, validity_end, min_x, min_y, max_x, max_y, state_id = cursor.fetchone()
+        conn.close()
+        return Territory(territory_id, [], BoundingBox(min_x, min_y, max_x-min_x, max_y-min_y), validity_start, validity_end, state_id)

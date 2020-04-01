@@ -2,18 +2,23 @@ from .helper import fill_optional_fields
 from maps_geometry.compression import compress
 from maps_geometry.feature_extraction import get_bounding_box
 from .TerritoryShape import TerritoryShape
-
+from .BoundingBox import BoundingBox
+from datetime import datetime
 
 class Territory:
-    def __init__(self, territory_id, representations: list,  min_x=None, max_x=None, min_y=None, max_y=None, validity_start=None, validity_end=None):
+    def __init__(self, territory_id, representations: list,  bounding_box = None,  validity_start=None, validity_end=None, state_id=None):
+        assert isinstance(validity_start, datetime)
+        assert isinstance(validity_end, datetime)
+        assert isinstance(representations, list)
+        assert bounding_box is None or isinstance(bounding_box, BoundingBox)
+        for representation in representations:
+            assert isinstance(representation, TerritoryShape)
         self.territory_id = territory_id
         self.representations = representations
-        self.min_x = min_x
-        self.max_x = max_x
-        self.min_y = min_y
-        self.max_y = max_y
+        self.bounding_box = bounding_box
         self.validity_end = validity_end
         self.validity_start = validity_start
+        self.state_id=state_id
 
 
     @staticmethod
@@ -26,12 +31,12 @@ class Territory:
             shape = compress(json_dict['d_path'], level)
             if shape :
                 representations.append(TerritoryShape(shape, level))
-        return Territory(json_dict['territory_id'], min_x=minx, max_x=maxx, min_y=miny, max_y=maxy, representations=representations)
+        return Territory(json_dict['territory_id'], bounding_box=BoundingBox(minx, miny , maxx-minx, maxy-miny), representations=representations)
 
     def __str__(self):
         return str({
             "territory_id": self.territory_id,
-            "bounding_box": str(((self.min_x, self.min_y), (self.max_x, self.max_y))),
+            "bounding_box": str(self.bounding_box),
             "representations": str([str(rep) for rep in self.representations])
         }
         )
