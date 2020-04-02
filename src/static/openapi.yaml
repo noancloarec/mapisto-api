@@ -257,6 +257,44 @@ paths:
           description: State info retrieved
         "404" :
           description: Territory not found
+  /state_search:
+    get:
+      tags : 
+        - State
+      summary: "
+        Retrieves the states that match the pattern in parameter
+        if a period is specified, get only the state which are valid during the whole period
+      "
+      parameters:
+        - name : pattern
+          in : query
+          required: true
+          schema :
+            type : string
+          example : "fra"
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: string
+            format: datetime
+          example: "1918-02-01T15:00:00Z"
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: string
+            format: datetime
+          example: "1918-02-01T15:00:00Z"
+      responses:
+        "200" :
+          content:
+            application/json :
+              schema : 
+                type : array
+                items : 
+                  $ref : "#/components/schemas/State"
+          description: A list of state retrieved
   /state/{state_id}/concurrent_states:
     get:
       tags:
@@ -357,6 +395,42 @@ paths:
           The period provided does not include the existing one. Cannot extend
           One of the states to be merged has a period not included in the provided period
           "
+  /state/{state_id}/absorb/{to_be_absorbed}:
+    put:
+      tags:
+        - State
+      summary: "
+      Merge to_be_absorbed state in state_id, reassign all territories
+      "
+      parameters :
+        - name: state_id
+          in : path
+          description: The id of the state which whill contains to_be_absorbed
+          required : true
+          schema :
+            $ref : "#/components/schemas/State/properties/state_id"
+          example : 1
+        - name: to_be_absorbed
+          in : path
+          description: The id of the state that will be absorbed
+          required : true
+          schema :
+            $ref : "#/components/schemas/State/properties/state_id"
+          example : 2
+      responses:
+        "200" :
+          content:
+            application/json :
+              schema : 
+                type : number
+          description: The id of the merged state
+        "404" :
+          description: Either to_be_absorbed or state_id was not found
+        "400" : 
+          description: "
+            to_be_absorbed has a validity period that lies outside of state_id validity period
+          "
+
   /territory/{territory_id}/concurrent_territories:
     get:
       tags:
@@ -471,6 +545,40 @@ paths:
           description: The updated territory
         "404" :
           description: One of the territories to extend or to remove was not found within the period
+  /territory/{territory_id}/reassign_to/{state_id}:
+    put:
+      tags:
+        - Territory
+      summary: "
+      Moves a territory from one state to another
+      "
+      parameters :
+        - name: territory_id
+          in : path
+          description: The id of the territory to reassign
+          required : true
+          schema :
+            $ref : "#/components/schemas/Territory/properties/territory_id"
+          example : 1
+        - name: state_id
+          in : path
+          description: The id of the state to give the territory to
+          required : true
+          schema :
+            $ref : "#/components/schemas/State/properties/state_id"
+          example : 1
+      responses:
+        "200" :
+          content:
+            application/json :
+              schema : 
+                type : number
+          
+          description: The updated territory id
+        "404" :
+          description: The territory or the state was not found
+        "400":
+          description : "The territory period lies outside of the state validity" 
 
 
 components:

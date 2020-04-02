@@ -136,6 +136,22 @@ def extend_territory(territory_id) :
     datasource.extend_territory(territory_id, start, end, request.json)
     return jsonify(datasource.get_territory(territory_id))
 
+@app.route('/state_search', methods=['GET'])
+def searchStates():
+    try :
+        start,end=date_from_request('start', 'end')
+    except BadRequest:
+        start, end = None, None
+    pattern = request.args.get('pattern')
+    return jsonify(datasource.search_states(pattern, start, end))
+
+@app.route('/state/<state_id>/absorb/<to_be_absorbed_id>', methods=['PUT'])
+def absorb_state(state_id, to_be_absorbed_id):
+    return jsonify(datasource.reassign_state(int(to_be_absorbed_id), int(state_id)))
+
+@app.route('/territory/<territory_id>/reassign_to/<state_id>', methods=['PUT'])
+def reassign_territory(territory_id, state_id):
+    return jsonify(datasource.reassign_territory(int(territory_id), int(state_id)))
 
 @app.route('/', methods=['GET'])
 def redirectDoc():

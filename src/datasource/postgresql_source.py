@@ -508,3 +508,153 @@ class PostgreSQLDataSource():
         territory_id, validity_start, validity_end, min_x, min_y, max_x, max_y, state_id = cursor.fetchone()
         conn.close()
         return Territory(territory_id, [], BoundingBox(min_x, min_y, max_x-min_x, max_y-min_y), validity_start, validity_end, state_id)
+    
+    def search_states(self, pattern, start=None, end=None):
+        conn=self.open_connection()
+        cursor=conn.cursor()
+        if start and end :
+            cursor.execute(
+                '''
+                SELECT state_id, name, color, validity_start, validity_end 
+                FROM state_names
+                WHERE
+                    name != ''
+                    AND validity_start <= %s 
+                    AND validity_end >= %s
+                    AND
+                    (
+                    lower(name) LIKE(CONCAT('%%', lower(%s), '%%')) 
+                    OR lower(%s) LIKE (CONCAT('%%', lower(name), '%%'))
+                    )
+                ''',
+                (start, end, pattern, pattern)
+            )
+        else:
+            cursor.execute(
+                '''
+                SELECT state_id, name, color, validity_start, validity_end 
+                FROM state_names
+                WHERE
+                    name != '' AND
+                    (
+                        lower(name) LIKE(CONCAT('%%', lower(%s), '%%')) 
+                        OR lower(%s) LIKE (CONCAT('%%', lower(name), '%%'))
+                    )
+                ''',
+                (pattern, pattern)
+            )
+        res = []
+        for row in cursor.fetchall():
+            (state_id, name, color, validity_start, validity_end) = row
+            res.append(State(state_id, name, [], color, validity_start, validity_end))
+        conn.close()
+        return res
+    def check_reassign_state_consistency(self, to_be_reassigned_id, to_be_enlarged_id):
+        conn=self.open_connection()
+        with conn.cursor() as cur:
+            cur.execute('''
+            SELECT state_id, validity_start, validity_end
+            FROM state_names 
+            WHERE state_id IN %s
+            ''', ((to_be_enlarged_id, to_be_reassigned_id),))
+            res = cur.fetchall()
+            logging.debug('RES')
+            logging.debug(res)
+            try : 
+                to_be_enlarged = next(st for st in res if st[0]==to_be_enlarged_id)
+                logging.debug(to_be_enlarged)
+                to_be_reassigned = next(st for st in res if st[0]==to_be_reassigned_id)
+                if to_be_enlarged[1] > to_be_reassigned[1] :
+                    raise BadRequest(f'''
+                        Error : the state to be reassigned starts before the target : 
+                            {to_be_reassigned[1].isoformat()}<{to_be_enlarged[1].isoformat()}''')
+                if to_be_enlarged[2] < to_be_reassigned[2] :
+                    raise BadRequest(f'''
+                                    Error : the state to be reassigned ends before the target : 
+                                    {to_be_reassigned[2].isoformat()}>{to_be_enlarged[2].isoformat()}''')
+            except StopIteration :
+                raise NotFound(f"Could not find {to_be_reassigned_id} and {to_be_enlarged_id}") 
+        conn.close()
+    def reassign_state(self, to_be_reassigned_id, to_be_enlarged_id):
+        assert isinstance(to_be_reassigned_id, int)
+        assert isinstance(to_be_enlarged_id, int)
+        self.check_reassign_state_consistency(to_be_reassigned_id, to_be_enlarged_id)
+        conn = self.open_connection()
+        try:
+            with conn.cursor() as cur :
+                cur.execute('''
+                    UPDATE territories
+                    SET state_id=%s
+                    WHERE state_id=%s
+                ''', (to_be_enlarged_id, to_be_reassigned_id))
+                self.remove_empty_state(cur, to_be_reassigned_id)
+                conn.commit()
+                conn.close()
+        except Exception as e:
+            conn.rollback()
+            logging.warning("canceled transaction")
+            raise e
+        return to_be_enlarged_id
+
+    def check_reassign_territory_consistency(self, territory_id, state_id):
+        conn=self.open_connection()
+        with conn.cursor() as cur:
+            cur.execute('''
+                SELECT validity_start, validity_end 
+                FROM territories
+                WHERE territory_id=%s
+            ''', (territory_id,))
+            territory_period = cur.fetchone()
+            if territory_period is None:
+                raise NotFound(f"Cannot find territory {territory_id}")
+            cur.execute('''
+                SELECT validity_start, validity_end
+                FROM state_names
+                WHERE state_id=%s
+            ''', (state_id,))
+            state_period = cur.fetchone()
+            if state_period is None:
+                raise NotFound(f'Cannot find state {state_id}')
+            if state_period[0] > territory_period[0] or state_period[1]< territory_period[1]:
+                raise BadRequest(f'''
+                    Cannot assign a territory with validity ({territory_period[0]}, {territory_period[1]}) 
+                    that lies outside of state validity ({state_period[0]}, {state_period[1]})''')
+        conn.close()
+
+    def reassign_territory(self, territory_id, state_id):
+        assert isinstance(territory_id, int)
+        assert isinstance(state_id, int)
+        self.check_reassign_territory_consistency(territory_id, state_id)
+        conn = self.open_connection()
+        try:
+            with conn.cursor() as cur :
+                cur.execute('''
+                    UPDATE territories
+                    SET state_id=%s
+                    WHERE territory_id=%s
+                ''', (state_id, territory_id))
+                cur.execute('''
+                    SELECT COUNT(*)
+                    FROM territories INNER JOIN states ON territories.state_id=states.state_id
+                    WHERE territories.state_id=%s
+                ''', (state_id,))
+                if(cur.fetchone()[0]==0):
+                    self.remove_empty_state(cur, state_id)
+                conn.commit()
+                conn.close()
+        except Exception as e:
+            conn.rollback()
+            logging.warning("canceled transaction")
+            raise e
+        return territory_id
+
+    def remove_empty_state(self, cursor, state_id):
+        cursor.execute('''
+            DELETE FROM state_names 
+            WHERE state_id=%s
+        ''', (state_id,))
+        cursor.execute('''
+            DELETE FROM states 
+            WHERE state_id=%s
+        ''', (state_id,))
+
