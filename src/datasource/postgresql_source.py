@@ -482,14 +482,15 @@ class PostgreSQLDataSource():
                     WHERE 
                         territory_id=%s
                 """, (newStart, newEnd, to_extend))
-                curs.execute("""
-                    DELETE FROM Territories_shapes
-                    WHERE territory_id IN %s
-                """, (tuple(to_be_removed),))
-                curs.execute("""
-                    DELETE FROM Territories
-                    WHERE territory_id in %s
-                """, (tuple(to_be_removed),))
+                if len(to_be_removed) :
+                    curs.execute("""
+                        DELETE FROM Territories_shapes
+                        WHERE territory_id IN %s
+                    """, (tuple(to_be_removed),))
+                    curs.execute("""
+                        DELETE FROM Territories
+                        WHERE territory_id in %s
+                    """, (tuple(to_be_removed),))
                 conn.commit()
                 conn.close()
                 return True
