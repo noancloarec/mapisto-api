@@ -183,9 +183,9 @@ class PostgreSQLDataSource():
         conn = self.open_connection()
         cursor = conn.cursor()
         cursor.execute('''
-            UPDATE state_names SET name=%s
+            UPDATE state_names SET name=%s, color=%s
             WHERE state_id=%s AND validity_start = %s AND validity_end=%s
-        ''', (state.name, state.state_id, validity_start.isoformat(), validity_end.isoformat()))
+        ''', (state.name, state.color, state.state_id, validity_start.isoformat(), validity_end.isoformat()))
         rowcount = cursor.rowcount
         conn.commit()
         cursor.close()
@@ -527,6 +527,7 @@ class PostgreSQLDataSource():
                     lower(name) LIKE(CONCAT('%%', lower(%s), '%%')) 
                     OR lower(%s) LIKE (CONCAT('%%', lower(name), '%%'))
                     )
+                LIMIT 20
                 ''',
                 (start, end, pattern, pattern)
             )
@@ -541,6 +542,7 @@ class PostgreSQLDataSource():
                         lower(name) LIKE(CONCAT('%%', lower(%s), '%%')) 
                         OR lower(%s) LIKE (CONCAT('%%', lower(name), '%%'))
                     )
+                LIMIT 20
                 ''',
                 (pattern, pattern)
             )
@@ -630,6 +632,12 @@ class PostgreSQLDataSource():
         try:
             with conn.cursor() as cur :
                 cur.execute('''
+                    SELECT state_id 
+                    FROM territories
+                    WHERE territory_id=%s
+                ''', (territory_id,))
+                old_state_id = cur.fetchone()[0]
+                cur.execute('''
                     UPDATE territories
                     SET state_id=%s
                     WHERE territory_id=%s
@@ -638,9 +646,11 @@ class PostgreSQLDataSource():
                     SELECT COUNT(*)
                     FROM territories INNER JOIN states ON territories.state_id=states.state_id
                     WHERE territories.state_id=%s
-                ''', (state_id,))
-                if(cur.fetchone()[0]==0):
-                    self.remove_empty_state(cur, state_id)
+                ''', (old_state_id,))
+                row = cur.fetchone()
+                logging.debug(f"COUNT retrieved for {old_state_id} : {row[0]}")
+                if(row[0]==0):
+                    self.remove_empty_state(cur, old_state_id)
                 conn.commit()
                 conn.close()
         except Exception as e:

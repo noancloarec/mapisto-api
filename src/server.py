@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from pprint import pprint
 
-from dateutil.parser import parse
+from dateutil.parser import parse, ParserError
 from flask import Flask, jsonify, redirect, request, send_from_directory
 from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -163,7 +163,7 @@ def date_from_request(*identifiers):
     try:
         for id in identifiers:
             res.append(parse(request.args.get(id)).replace(tzinfo=pytz.UTC))
-    except TypeError:
+    except (TypeError, ParserError):
         if request.args.get(id) == None:
             raise BadRequest("Missing parameter : "+id)
         else:
