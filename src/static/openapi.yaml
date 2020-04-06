@@ -11,6 +11,8 @@ tags:
     description: Load mapisto's maps
   - name: State
     description: "manage states data"
+  - name: Video
+    description: Maps evolution through time
   - name: Territories
     description: "Read an manage territories' data"
   - name: Land
@@ -579,7 +581,30 @@ paths:
           description: The territory or the state was not found
         "400":
           description : "The territory period lies outside of the state validity" 
-
+  /movie/{state_id}:
+    get:
+      tags:
+        - Video
+      summary: Retrieve the evolution of a state through its lifespan
+      parameters: 
+        - name : state_id
+          in: path
+          description: The id of the state which we want to play the evolution
+          required : true
+          schema : 
+            $ref : "#/components/schemas/Territory/properties/territory_id"
+          example : 79
+      responses:
+        "200":
+          description: The state evolution was correctly retrieved
+          content:
+            application/json :
+              schema :
+                type: array
+                items :
+                  $ref: "#/components/schemas/Scene"
+        "404" :
+          description: State not found
 
 components:
   schemas:
@@ -658,3 +683,24 @@ components:
         height:
           type: integer
           example: 1000
+    Scene:
+      type: object
+      description: a scene to be played in mapisto videos
+      properties:
+        validity_start:
+          type: string
+          format: datetime
+          example: "1918-01-01T00:00:00Z"
+        validity_end:
+          type: string
+          format: datetime
+          example: "1919-01-01T00:00:00Z"
+        map_evolution:
+          type: array
+          items: 
+            $ref : "#/components/schemas/State"
+          description: The list of states that took part within the scene lifespan
+        bounding_box:
+          description: The bounding box in which to play the scene
+          type: string
+          example: "#FF0000"

@@ -40,3 +40,7 @@ class Territory:
             "representations": str([str(rep) for rep in self.representations])
         }
         )
+
+    def is_outdated(self, at:datetime):
+        assert isinstance(at, datetime)
+        return at < self.validity_start or at>= self.validity_end

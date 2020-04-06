@@ -10,6 +10,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from werkzeug.exceptions import BadRequest, InternalServerError, HTTPException
 
 from datasource.postgresql_source import PostgreSQLDataSource
+from datasource.video_extraction import VideoExtraction
 from json_encoder import MapistoObjectsEncoder
 from resources.Land import Land
 import pytz
@@ -22,7 +23,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 datasource = PostgreSQLDataSource()
-
+videoSource = VideoExtraction()
 app = Flask(__name__)
 CORS(app)
 # app.config['CORS_HEADERS'] = 'Content-Type'
@@ -54,13 +55,16 @@ def send_static(path):
 def get_states():
     date = date_from_request('date')
     precision, bbmin_x, bbmax_x, bbmin_y, bbmax_y = extract_map_request()
-    res = jsonify(datasource.get_states(
-        date,
+    logging.debug("GET")
+    logging.debug(f"from {date} to {plus1}")
+    res = jsonify(datasource.get_states_at(
+        date, date,
         precision=precision,
         bbmin_x=bbmin_x,
         bbmax_x=bbmax_x,
         bbmin_y=bbmin_y,
-        bbmax_y=bbmax_y
+        bbmax_y=bbmax_y,
+        end_time_included =True
     ))
     return res
 
@@ -152,6 +156,10 @@ def absorb_state(state_id, to_be_absorbed_id):
 @app.route('/territory/<territory_id>/reassign_to/<state_id>', methods=['PUT'])
 def reassign_territory(territory_id, state_id):
     return jsonify(datasource.reassign_territory(int(territory_id), int(state_id)))
+
+@app.route('/movie/<state_id>', methods=['GET'])
+def get_movie(state_id):
+    return jsonify(videoSource.get_video(int(state_id)))
 
 @app.route('/', methods=['GET'])
 def redirectDoc():

@@ -5,7 +5,9 @@ import logging
 from resources.Territory import Territory
 from resources.BoundingBox import BoundingBox
 from werkzeug.exceptions import InternalServerError
-
+import numpy as np
+from resources.Scene import Scene
+from datetime import datetime
 
 class MapistoObjectsEncoder(JSONEncoder):
     def mapState(self, obj: State):
@@ -41,9 +43,19 @@ class MapistoObjectsEncoder(JSONEncoder):
                 res['d_path'] = obj.representations[0].d_path
         return res
 
+    def mapScene(self, obj:Scene):
+        return {
+            "validity_start" : obj.validity_start,
+            "validity_end" : obj.validity_end,
+            "bounding_box" : obj.bbox,
+            "states"  : obj.states
+        }
+
     def default(self, obj):  # pylint: disable=E0202
         if isinstance(obj, State):
             return self.mapState(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
         if isinstance(obj, Territory):
             return self.mapTerritory(obj)
         if isinstance(obj, Land):
@@ -55,6 +67,10 @@ class MapistoObjectsEncoder(JSONEncoder):
                 'd_path': obj.representations[0].d_path
 
             }
+        if isinstance(obj, Scene):
+            return self.mapScene(obj)
+        if isinstance(obj, datetime):
+            return obj.isoformat()
         if isinstance(obj, BoundingBox):
             return {
                 "x": obj.x,

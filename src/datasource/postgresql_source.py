@@ -23,11 +23,14 @@ class PostgreSQLDataSource():
             host=os.environ['MAPISTO_DB_HOST'],
             port=os.environ['MAPISTO_DB_PORT'],
             options='-c search_path=mapisto')
+    
+    def get_states_at(self, time:datetime, precision: float, bbmin_x, bbmax_x, bbmin_y, bbmax_y):
+        return self.get_states_between(time, time, precision,bbmin_x, bbmax_x, bbmin_y, bbmax_y, True)
 
-    def get_states(self, time: datetime, precision: float, bbmin_x, bbmax_x, bbmin_y, bbmax_y):
+    def get_states_between(self, start_time: datetime,end_time:datetime, precision: float, bbmin_x, bbmax_x, bbmin_y, bbmax_y, end_time_included:bool):
         conn = self.open_connection()
         cursor = conn.cursor()
-        cursor.execute('''
+        cursor.execute(f'''
         SELECT 
             states.state_id, 
             color,
@@ -47,8 +50,8 @@ class PostgreSQLDataSource():
             INNER JOIN state_names ON state_names.state_id=states.state_id 
             NATURAL JOIN territories_shapes 
         WHERE 
-            territories.validity_start <= %s AND territories.validity_end > %s
-            AND  state_names.validity_start <= %s AND state_names.validity_end > %s
+            territories.validity_start {'<=' if end_time_included else '<'} %s AND territories.validity_end > %s
+            AND  state_names.validity_start {'<=' if end_time_included else '<'} %s AND state_names.validity_end > %s
             AND precision_in_km=%s
             AND NOT(
                 %s < territories.min_x
@@ -57,7 +60,7 @@ class PostgreSQLDataSource():
                 OR territories.max_y < %s
             )
         ORDER BY state_id
-        ''', [time.isoformat()] * 4 + [precision, bbmax_x, bbmin_x, bbmax_y, bbmin_y])
+        ''', (end_time, start_time, end_time, start_time, precision, bbmax_x, bbmin_x, bbmax_y, bbmin_y))
         records = cursor.fetchall()
         conn.close()
         current_state_id = None
