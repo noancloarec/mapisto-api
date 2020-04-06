@@ -1,15 +1,17 @@
 from .postgresql_source import PostgreSQLDataSource
 from resources.Scene import Scene
 import functools
-import logging
 import numpy as np
 from resources.Territory import Territory
 from resources.BoundingBox import BoundingBox
+from werkzeug.exceptions import NotFound
 
 class VideoExtraction(PostgreSQLDataSource):
     def get_video(self, state_id):
         assert isinstance(state_id, int)
         scenes_many = self.get_all_viewboxes(state_id)
+        if not scenes_many:
+            raise NotFound(f"Cannot find state no {state_id}")
         for scene in scenes_many :
             scene.bbox = self.enlarge_viewBox(self.fit_viewbox_to_aspect_ratio(scene.bbox, 16/9), 1.2)
         scenes_merged = self.merged_scenes_with_similar_boxes(scenes_many)
@@ -55,7 +57,6 @@ class VideoExtraction(PostgreSQLDataSource):
         if len(scenes)<=1:
             return scenes
         else :
-            logging.debug(f"Similarity between {scenes[0].bbox} and {scenes[1].bbox} : {scenes[0].bbox.get_area_percentage_in_common(scenes[1].bbox)}")
             if scenes[0].bbox.get_area_percentage_in_common(scenes[1].bbox) > 40:
                 merged = Scene(
                     scenes[0].validity_start, 
