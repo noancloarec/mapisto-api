@@ -6,8 +6,8 @@ ADD requirements.txt .
 RUN pip install -r requirements.txt
 RUN pip install pytz
 WORKDIR /app/src
-ENV FLASK_APP=server.py
-CMD ["/bin/sh", "-c", "flask", "run", "-h", "0.0.0.0"]
-FROM base_env
+ENV FLASK_APP "server.py"
+ENV FLASK_ENV "development"
 ADD src .
+CMD  flask run --host=0.0.0.0
 

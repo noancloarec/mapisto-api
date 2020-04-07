@@ -1,9 +1,7 @@
 version: "3.4"
 services:
   mapisto-api:
-    build:
-      context: .
-      target: base_env
+    build: .
     ports:
       - "8080:5000"
     volumes:
