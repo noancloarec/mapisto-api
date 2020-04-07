@@ -1,5 +1,8 @@
 from datetime import datetime
 from .BoundingBox import BoundingBox
+import os
+import functools
+import logging
 class Scene:
     def __init__(self, validity_start, validity_end, bbox, states=[], lands=[]):
         assert isinstance(validity_start, datetime )
@@ -14,14 +17,7 @@ class Scene:
         self.lands = lands
 
     def get_precision(self):
-        in_km = lambda pt : 40000/2200 * pt
-        if in_km(self.bbox.width) < 500:
-            return 1
-        elif in_km(self.bbox.width) < 2000:
-            return 5
-        elif in_km(self.bbox.width) < 4000:
-            return 10
-        elif in_km(self.bbox.width) < 8000:
-            return 20
-        else:
-            return 50
+        km_per_pt= 1100/40000 * self.bbox.width
+        logging.debug(f'Kilometers per point : {km_per_pt}')
+        precision_levels = [int(level) for level in os.environ['PRECISION_LEVELS'].split(' ')]
+        return functools.reduce(lambda prev,curr : curr if abs(curr - km_per_pt) < abs(prev - km_per_pt) else prev , precision_levels )
