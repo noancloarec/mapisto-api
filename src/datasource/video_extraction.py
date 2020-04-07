@@ -31,7 +31,7 @@ class VideoExtraction(PostgreSQLDataSource):
             scene.states = self.get_states_between(
                 scene.validity_start, 
                 scene.validity_end, 
-                20,
+                scene.get_precision(),
                 bbmin_x = scene.bbox.x,
                 bbmin_y= scene.bbox.y,
                 bbmax_x=scene.bbox.x+scene.bbox.width,
@@ -39,7 +39,7 @@ class VideoExtraction(PostgreSQLDataSource):
                 end_time_included=False
                 )
             scene.lands = self.get_land(
-                20,
+                scene.get_precision(),
                 bbmin_x = scene.bbox.x,
                 bbmin_y= scene.bbox.y,
                 bbmax_x=scene.bbox.x+scene.bbox.width,
