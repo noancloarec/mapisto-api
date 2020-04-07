@@ -56,15 +56,13 @@ def get_states():
     date = date_from_request('date')
     precision, bbmin_x, bbmax_x, bbmin_y, bbmax_y = extract_map_request()
     logging.debug("GET")
-    logging.debug(f"from {date} to {plus1}")
     res = jsonify(datasource.get_states_at(
-        date, date,
+        date, 
         precision=precision,
         bbmin_x=bbmin_x,
         bbmax_x=bbmax_x,
         bbmin_y=bbmin_y,
-        bbmax_y=bbmax_y,
-        end_time_included =True
+        bbmax_y=bbmax_y
     ))
     return res
 

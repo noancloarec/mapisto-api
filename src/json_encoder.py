@@ -48,7 +48,8 @@ class MapistoObjectsEncoder(JSONEncoder):
             "validity_start" : obj.validity_start,
             "validity_end" : obj.validity_end,
             "bounding_box" : obj.bbox,
-            "states"  : obj.states
+            "states"  : obj.states,
+            "lands" : obj.lands
         }
 
     def default(self, obj):  # pylint: disable=E0202

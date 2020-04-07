@@ -5,6 +5,7 @@ import numpy as np
 from resources.Territory import Territory
 from resources.BoundingBox import BoundingBox
 from werkzeug.exceptions import NotFound
+import logging
 
 class VideoExtraction(PostgreSQLDataSource):
     def get_video(self, state_id):
@@ -12,9 +13,20 @@ class VideoExtraction(PostgreSQLDataSource):
         scenes_many = self.get_all_viewboxes(state_id)
         if not scenes_many:
             raise NotFound(f"Cannot find state no {state_id}")
-        for scene in scenes_many :
-            scene.bbox = self.enlarge_viewBox(self.fit_viewbox_to_aspect_ratio(scene.bbox, 16/9), 1.2)
+
+        # resize before merging because the fitted box could actually be more similar than the unfitted ones
+        for scene in scenes_many :    
+            scene.bbox = self.fit_viewbox_to_aspect_ratio(scene.bbox, 16/9)
         scenes_merged = self.merged_scenes_with_similar_boxes(scenes_many)
+        # Merge may have altered the aspect ratio, lets resize again , and enlarge this time (making the scene twice as tall)
+        for scene in scenes_merged :    
+            scene.bbox = self.enlarge_viewBox(self.fit_viewbox_to_aspect_ratio(scene.bbox, 16/9), 1.6)
+
+        # for scene in scenes_merged:
+        #     logging.debug(f"Initial bbox : {scene.bbox} ratio : {scene.bbox.width/scene.bbox.height}")
+            # fitted = self.fit_viewbox_to_aspect_ratio(scene.bbox, 16/9)
+            # logging.debug(f"fitted bbox : {fitted} ratio : {fitted.width/fitted.height}")
+            #logging.debug(f"enlarged bbox : {self.enlarge_viewBox(self.fit_viewbox_to_aspect_ratio(scene.bbox, 16/9), 1.2)}")
         for scene in scenes_merged:
             scene.states = self.get_states_between(
                 scene.validity_start, 
@@ -26,6 +38,12 @@ class VideoExtraction(PostgreSQLDataSource):
                 bbmax_y =scene.bbox.y+scene.bbox.height,
                 end_time_included=False
                 )
+            scene.lands = self.get_land(
+                20,
+                bbmin_x = scene.bbox.x,
+                bbmin_y= scene.bbox.y,
+                bbmax_x=scene.bbox.x+scene.bbox.width,
+                bbmax_y =scene.bbox.y+scene.bbox.height)
         return scenes_merged
 
     def get_all_viewboxes(self, state_id):
@@ -49,7 +67,12 @@ class VideoExtraction(PostgreSQLDataSource):
         bbox_list_by_period = [
                                     [t.bounding_box for t in territories if not t.is_outdated(changeDate)] 
                                 for changeDate in changeDates[:-1]]
-        bbox_by_period = [functools.reduce(lambda a,b : a.union(b), bbox_list ) for bbox_list in bbox_list_by_period]
+        logging.debug(bbox_list_by_period)
+        bbox_by_period = [functools.reduce(lambda a,b : a.union(b), bbox_list ) if len(bbox_list) else None for bbox_list in bbox_list_by_period]
+        # Some period may be empty for a state, the viewbox shall be the same as the previous one
+        for i, bbox in enumerate(bbox_by_period):
+            if bbox is None:
+                bbox_by_period[i] = bbox_by_period[i-1]
         return [Scene(changeDates[i], changeDates[i+1], bbox) for i, bbox in enumerate(bbox_by_period)]
 
 
@@ -90,7 +113,7 @@ class VideoExtraction(PostgreSQLDataSource):
                 width=bbox.width,
                 x=bbox.x,
                 height= bbox.width / aspect_ratio,
-                y= bbox.y - (aspect_ratio / bbox.width - bbox.height) / 2
+                y= bbox.y - ( bbox.width/aspect_ratio - bbox.height) / 2
             )
         else :
             return bbox
