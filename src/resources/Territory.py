@@ -4,6 +4,7 @@ from maps_geometry.feature_extraction import get_bounding_box
 from .TerritoryShape import TerritoryShape
 from .BoundingBox import BoundingBox
 from datetime import datetime
+from dateutil.parser import parse
 
 class Territory:
     def __init__(self, territory_id, representations: list,  bounding_box = None,  validity_start=None, validity_end=None, state_id=None):
@@ -31,7 +32,12 @@ class Territory:
             shape = compress(json_dict['d_path'], level)
             if shape :
                 representations.append(TerritoryShape(shape, level))
-        return Territory(json_dict['territory_id'], bounding_box=BoundingBox(minx, miny , maxx-minx, maxy-miny), representations=representations)
+        return Territory(json_dict['territory_id'],
+            bounding_box=BoundingBox(minx, miny , maxx-minx, maxy-miny),
+             representations=representations, 
+             validity_start=parse(json_dict['validity_start']),
+             validity_end=parse(json_dict['validity_end'])
+             )
 
     def __str__(self):
         return str({

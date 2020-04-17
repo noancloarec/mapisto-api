@@ -69,10 +69,8 @@ def get_states():
 
 @app.route('/state', methods=['POST'])
 def post_state():
-    validity_start, validity_end = date_from_request(
-        'validity_start', 'validity_end')
     state = State.from_dict(request.json, precision_levels=PRECISION_LEVELS)
-    return str(datasource.add_state(state, validity_start, validity_end))
+    return str(datasource.add_state(state))
 
 
 @app.route('/state', methods=['PUT'])

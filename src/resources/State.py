@@ -2,6 +2,7 @@ from .helper import fill_optional_fields
 from .Territory import Territory
 from .BoundingBox import BoundingBox
 from datetime import datetime
+from dateutil.parser import parse
 class State:
     def __init__(self, state_id,name, territories=None, color=None, validity_start=None, validity_end=None, bounding_box:BoundingBox=None):
         assert isinstance(validity_start, datetime) or validity_start is None
@@ -20,10 +21,15 @@ class State:
     @staticmethod
     def from_dict(json_dict, precision_levels):
         # Name and state id do not have to be defined
-        json_dict = fill_optional_fields(json_dict, ['name', 'state_id', 'territories', 'color'])
+        json_dict = fill_optional_fields(json_dict, ['name', 'state_id', 'territories', 'color', 'validity_start', 'validity_end'])
         if json_dict['territories']is None:
             territories = []
         else :
             territories = [Territory.from_dict(territory_dict, precision_levels=precision_levels) for territory_dict in json_dict['territories']]
-        return State(json_dict['state_id'], json_dict['name'], territories, json_dict['color'])
+        try:
+            validity_start = parse(json_dict['validity_start'])
+            validity_end=parse(json_dict['validity_end'])
+        except TypeError:
+            validity_start, validity_end = None, None
+        return State(json_dict['state_id'], json_dict['name'], territories, json_dict['color'], validity_start= validity_start, validity_end=validity_end )
     

@@ -144,21 +144,6 @@ paths:
       tags:
         - State
       summary: Add state information in the database for a given time perioed
-      parameters:
-        - name: validity_start
-          in: query
-          required: true
-          schema:
-            type: string
-            format: datetime
-          example: "1918-01-01T00:00:00Z"
-        - name: validity_end
-          in: query
-          required: true
-          schema:
-            type: string
-            format: datetime
-          example: "1919-01-01T00:00:00Z"
       requestBody:
         description: The State to add
         required: true

@@ -140,7 +140,7 @@ class PostgreSQLDataSource():
         (state_id, name, validity_start, validity_end, color) = records[0]
         return State(state_id, name, color=color, validity_start=validity_start, validity_end=validity_end)
 
-    def add_state(self, state: State, validity_start: datetime, validity_end: datetime):
+    def add_state(self, state: State):
         try:
             conn = self.open_connection()
             with conn.cursor() as curs:
@@ -149,20 +149,20 @@ class PostgreSQLDataSource():
                 state_id = curs.fetchone()[0]
                 curs.execute(
                     'INSERT INTO state_names(name, state_id, validity_start, validity_end, color) VALUES(%s, %s, %s, %s, %s)',
-                    (state.name, state_id, validity_start.isoformat(),
-                     validity_end.isoformat(), state.color)
+                    (state.name, state_id, state.validity_start.isoformat(),
+                     state.validity_end.isoformat(), state.color)
                 )
                 for territory in state.territories:
                     curs.execute(
                         'INSERT INTO territories(state_id, validity_start, validity_end, min_x, max_x, min_y, max_y) VALUES(%s, %s, %s, %s, %s, %s, %s) RETURNING territory_id',
                         (
                             state_id,
-                            validity_start.isoformat(),
-                            validity_end.isoformat(),
-                            territory.min_x,
-                            territory.max_x,
-                            territory.min_y,
-                            territory.max_y
+                            territory.validity_start.isoformat(),
+                            territory.validity_end.isoformat(),
+                            territory.bounding_box.x,
+                            territory.bounding_box.x + territory.bounding_box.width,
+                            territory.bounding_box.y,
+                            territory.bounding_box.y + territory.bounding_box.height
                         )
                     )
                     territory_id = curs.fetchone()[0]
