@@ -672,3 +672,105 @@ class PostgreSQLDataSource():
             WHERE state_id=%s
         ''', (state_id,))
 
+    def get_simple_state(self, cursor, state_id):
+        cursor.execute('''
+        SELECT state_id,name ,  color , validity_start, validity_end 
+        FROM state_names 
+        WHERE state_id=%s''', (state_id,))
+        row = cursor.fetchone()
+        if not row:
+            raise NotFound(f'Could not find state no {state_id}')
+        return State(row[0], row[1], [], row[2], row[3], row[4])
+    
+    def copy_state(self, cursor, state_id_to_copy, validity_start):
+        cursor.execute(
+            'INSERT INTO states VALUES(default) RETURNING state_id')
+        state_id = cursor.fetchone()[0]
+        cursor.execute('''
+            INSERT INTO state_names(state_id, name, color, validity_start, validity_end)
+            SELECT %s, name, color, %s, validity_end
+            FROM state_names
+            WHERE state_id=%s
+        ''', (state_id, validity_start, state_id_to_copy))
+        return state_id
+    def reduce_lifespan(self, cursor, state_id, new_validity_end):
+        cursor.execute('''
+            UPDATE state_names 
+            SET validity_end=%s
+            WHERE state_id=%s
+        ''', (new_validity_end, state_id))
+
+    def get_territory_ids_impacted_by_split(self, cursor, state_id, split_date):
+        cursor.execute('''
+            SELECT territory_id
+            FROM territories
+            WHERE 
+                state_id=%s
+                AND validity_start < %s
+                AND validity_end > %s
+        ''', (state_id, split_date, split_date))
+        territory_ids_to_split = [row[0] for row in cursor.fetchall()]
+        cursor.execute('''
+            SELECT territory_id 
+            FROM territories
+            WHERE 
+                state_id=%s
+                AND validity_start >= %s
+        ''', (state_id, split_date))
+        territory_ids_to_reassign = [row[0] for row in cursor.fetchall()]
+        logging.debug(f'territories to reassign {territory_ids_to_reassign}')
+        return territory_ids_to_split, territory_ids_to_reassign
+    
+    def do_reassign_territories(self, cursor, territory_ids, state_id):
+        cursor.execute('''
+            UPDATE territories
+            SET state_id=%s
+            WHERE territory_id IN %s
+        ''', (state_id, tuple(territory_ids)))
+
+    def split_territory(self, cursor, territory_id, split_date, latter_state_id):
+        cursor.execute('''
+            INSERT INTO Territories(validity_start, validity_end, min_x, max_x, min_y, max_y, state_id)
+            SELECT %s, validity_end, min_x, max_x, min_y, max_y, %s
+            FROM Territories
+            WHERE territory_id=%s
+            RETURNING territory_id
+        ''', (split_date, latter_state_id, territory_id))
+        new_territory_id = cursor.fetchone()[0]
+        cursor.execute('''
+            INSERT INTO territories_shapes(territory_id, d_path, precision_in_km)
+            SELECT %s, d_path, precision_in_km
+            FROM territories_shapes
+            WHERE territory_id=%s
+        ''', (new_territory_id, territory_id))
+        cursor.execute('''
+            UPDATE territories
+            SET validity_end=%s
+            WHERE territory_id=%s
+        ''', (split_date, territory_id))
+
+    def split_state(self, state_id, split_date):
+        assert isinstance(state_id, int)
+        assert isinstance(split_date, datetime)
+        conn = self.open_connection()
+        split_date = split_date.replace(tzinfo=None)
+        try:
+            with conn.cursor() as cur :
+                state_to_split = self.get_simple_state(cur, state_id)
+                if state_to_split.validity_start >= split_date or state_to_split.validity_end <= split_date:
+                    raise BadRequest(f'Cannot split state no {state_id} around {split_date} : not in its lifespan [{state_to_split.validity_start} , {state_to_split.validity_end}[')
+                late_state_id = self.copy_state(cur, state_id, split_date)
+                territory_ids_to_split, territory_ids_to_reassign = self.get_territory_ids_impacted_by_split(cur, state_id, split_date)
+                if territory_ids_to_reassign:
+                    self.do_reassign_territories(cur,  territory_ids_to_reassign, late_state_id)
+                for territory_id in territory_ids_to_split :
+                    self.split_territory(cur, territory_id, split_date, late_state_id)
+                self.reduce_lifespan(cur, state_id, split_date)
+                conn.commit()
+                conn.close()
+                return late_state_id
+        except Exception as e:
+            conn.rollback()
+            logging.warning("canceled transaction")
+            raise e
+        

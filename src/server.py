@@ -113,6 +113,11 @@ def get_state_by_id(state_id):
     # min precision to catch even the smallest territories
     return jsonify(datasource.get_state(int(state_id), date, min(PRECISION_LEVELS)))
 
+@app.route('/state/<state_id>/split', methods=["PUT"])
+def split_state(state_id):
+    date = date_from_request('date')
+    return jsonify(datasource.split_state(int(state_id), date))
+
 
 @app.route('/state/<state_id>/concurrent_states', methods=["GET"])
 def get_concurrent_states(state_id):

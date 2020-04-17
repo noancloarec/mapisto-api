@@ -244,6 +244,33 @@ paths:
           description: State info retrieved
         "404" :
           description: Territory not found
+  /state/{state_id}/split:
+    put:
+      tags : 
+        - State
+      summary: Split a state and its territories in time. Useful to change a state lifespan
+      parameters:
+        - name : state_id
+          in : path
+          required: true
+          schema :
+            $ref : "#/components/schemas/State/properties/state_id"
+          example : 1
+
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: datetime
+          example: "1918-02-01T15:00:00Z"
+      responses:
+        "200" :
+          description: State correctly split
+        "404" :
+          description: State not found
+        "400" :
+          description: The state was not alive on the mentioned split date
   /state_search:
     get:
       tags : 
