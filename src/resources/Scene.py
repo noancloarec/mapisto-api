@@ -18,6 +18,7 @@ class Scene:
 
     def get_precision(self):
         km_per_pt= 1100/40000 * self.bbox.width
+        required_precision = .5*km_per_pt
         logging.debug(f'Kilometers per point : {km_per_pt}')
         precision_levels = [int(level) for level in os.environ['PRECISION_LEVELS'].split(' ')]
-        return functools.reduce(lambda prev,curr : curr if abs(curr - km_per_pt) < abs(prev - km_per_pt) else prev , precision_levels )
+        return functools.reduce(lambda prev,curr : curr if abs(curr - required_precision) < abs(prev - required_precision) else prev , precision_levels )
