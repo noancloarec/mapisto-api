@@ -37,3 +37,6 @@ class BoundingBox:
 
     def __str__(self):
         return str((self.x, self.y, self.width, self.height))
+
+    def equals(self, other):
+        return isinstance(other, BoundingBox) and (other.x, other.y, other.width, other.height)==(self.x, self.y, self.width, self.height)

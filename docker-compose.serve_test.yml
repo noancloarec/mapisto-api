@@ -3,14 +3,13 @@ services:
   mapisto-api:
     build: .
     ports:
-      - "8080:5000"
+      - "7070:5000"
     volumes:
       - ./src:/app/src
-    environment:
-      FLASK_DEBUG: 1
+    tty: true
     env_file:
-      - conf.env
-  database:
+      - conf.test.env
+  database_test:
     image: postgres:12-alpine
     ports: 
       - 5433:5432

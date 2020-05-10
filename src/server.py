@@ -9,15 +9,11 @@ from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
 from werkzeug.exceptions import BadRequest, InternalServerError, HTTPException
 
-from datasource.postgresql_source import PostgreSQLDataSource
-from datasource.video_extraction import VideoExtraction
 from json_encoder import MapistoObjectsEncoder
 from resources.Land import Land
 import pytz
 from resources.State import State
 
-PRECISION_LEVELS = [float(prec)
-                    for prec in os.environ['PRECISION_LEVELS'].split(' ')]
 
 logging.basicConfig(level=logging.DEBUG)
 
