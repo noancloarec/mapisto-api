@@ -43,3 +43,9 @@ def test_add_corrupted_land():
             LandCRUD.add_land(curs, corrupted_land)
     with get_cursor() as curs:
         assert LandCRUD.count(curs)==nb_lands_in_db # no land was added
+
+def test_get_lands():
+    with get_cursor() as curs:
+        LandCRUD.add_land(curs, example_land)
+        lands = LandCRUD.get_lands(curs, example_land.bounding_box, 0)
+        assert len(lands) >= 1
