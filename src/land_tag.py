@@ -1,4 +1,5 @@
 from resources.Land import Land
+from resources.BoundingBox import BoundingBox
 from maps_geometry.compression import compress_land
 from crud.Land_CRUD import LandCRUD
 from werkzeug.exceptions import BadRequest
@@ -19,3 +20,11 @@ class LandTag:
         assert isinstance(land_id, int)
         with get_cursor() as cursor:
             return LandCRUD.get_land(cursor, land_id)
+
+    @staticmethod
+    def get_lands(bbox, precision):
+        assert isinstance(bbox, BoundingBox)
+        if precision not in conf.PRECISION_LEVELS:
+            raise BadRequest(f"required precision is not registered on server, available precisions : {conf.PRECISION_LEVELS}")
+        with get_cursor() as cursor:
+            return LandCRUD.get_lands(cursor, bbox, precision)

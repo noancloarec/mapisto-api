@@ -53,3 +53,22 @@ class LandCRUD:
                 )
             )
         return land_id
+    
+    @staticmethod
+    def get_lands(cursor, bbox, precision):
+        assert isinstance(bbox, BoundingBox)
+        cursor.execute('''
+            SELECT land_id, d_path
+            FROM lands NATURAL JOIN lands_shapes 
+            WHERE 
+                precision_in_km=%s
+                AND NOT(
+                    %s < lands.min_x
+                    OR lands.max_x < %s
+                    OR %s < lands.min_y
+                    OR lands.max_y < %s
+                )
+            ''',
+        (precision, bbox.max_x, bbox.x, bbox.max_y, bbox.y)
+        )
+        return [Land(row[0], [MapistoShape(row[1], precision)]) for row in cursor.fetchall()]

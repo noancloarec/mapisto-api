@@ -4,6 +4,8 @@ class BoundingBox:
         self.y = y
         self.width = width
         self.height = height
+        self.max_x = x + width
+        self.max_y = y + height
 
     def union(self, other):
         self_max_x = self.x+self.width

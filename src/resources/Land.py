@@ -4,8 +4,8 @@ from .MapistoShape import MapistoShape
 from .BoundingBox import BoundingBox
 
 class Land:
-    def __init__(self, land_id, representations: list,  bounding_box):
-        assert isinstance(bounding_box, BoundingBox)
+    def __init__(self, land_id, representations: list,  bounding_box=None):
+        assert isinstance(bounding_box, BoundingBox) or bounding_box is None
         assert isinstance(representations, list)
         self.land_id = land_id
         self.representations = representations

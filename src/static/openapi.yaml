@@ -5,7 +5,7 @@ info:
 servers:
   - url: https://api.mapisto.org
   - url: "http://localhost:8080"
-  - url: "http://localhost:5000"
+  - url: "http://localhost:7070"
 tags:
   - name: Map
     description: Load mapisto's maps
