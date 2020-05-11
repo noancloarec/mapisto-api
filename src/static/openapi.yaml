@@ -4,8 +4,8 @@ info:
   version: "0.1"
 servers:
   - url: https://api.mapisto.org
-  - url: "http://localhost:8080"
-  - url: "http://localhost:7070"
+  - url: http://localhost:8080
+  - url: http://localhost:7070
 tags:
   - name: Map
     description: Load mapisto's maps
@@ -143,7 +143,7 @@ paths:
     post:
       tags:
         - State
-      summary: Add state information in the database for a given time perioed
+      summary: Add a sovereign state to the database
       requestBody:
         description: The State to add
         required: true
@@ -154,8 +154,13 @@ paths:
       responses:
         "200":
           description: State was correctly added
+          content:
+            application/json :
+              schema :
+                type: number
+                description: The id of the added state
         "400":
-          description: Bad Request
+          description: Malformed State
     put:
       tags:
         - State
@@ -627,27 +632,39 @@ components:
           type: integer
           example: 1
         validity_start:
+          description: the start of the total period of the state
           type: string
           format: datetime
           example: "1918-01-01T00:00:00Z"
         validity_end:
+          description: the end of the total period of the state
           type: string
           format: datetime
           example: "1919-01-01T00:00:00Z"
-        name:
-          type: string
-          example: Austria-Hungary
-        color:
-          type: string
-          example: "#FF0000"
+        representations : 
+          type: array
+          items :
+            $ref : "#/components/schemas/StateRepresentation"
         bounding_box:
           description: The bounding box for all of the state's territories
           $ref : "#/components/schemas/BoundingBox"
-        territories:
-          description: "List of territories included in the state"
-          type: array
-          items:
-            $ref: "#components/schemas/Territory"
+    StateRepresentation:
+        description: A representation for the state at a given period
+        type: object
+        properties:
+          state_name_id :
+            type : integer
+          validity_start:
+            type : string
+            format : datetime
+          validity_end : 
+            type : string
+          name:
+            type: string
+            example: Austria-Hungary
+          color:
+            type: string
+            example: "#FF0000"
     Territory:
       description: "Representation of a territory belonging to a state"
       type: object
@@ -655,6 +672,12 @@ components:
         territory_id:
           type: integer
           example: 1
+        name : 
+          description : An optional name for the territory (if not the state's name is used)
+          type: string
+        color :
+          description: A color if the state's color should be overriden
+          type: string
         d_path:
           type: string
           example: "M150 0 L75 200 L225 200 Z"
@@ -669,7 +692,9 @@ components:
         bounding_box:
           description: The territory's bounding box
           $ref : "#/components/schemas/BoundingBox"
-
+        state_id : 
+          description: The state to which it belongs
+          type : integer
     LandShape:
       description: Representation of a land map 
       type: object

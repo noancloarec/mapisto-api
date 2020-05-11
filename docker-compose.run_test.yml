@@ -8,9 +8,17 @@ services:
     tty: true
     env_file:
       - conf.test.env
+    depends_on: 
+      - database_test
   database_test:
     image: postgres:12-alpine
     ports: 
       - 5433:5432
     volumes:
       - $HOME/docker/volumes/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
