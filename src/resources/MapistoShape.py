@@ -4,11 +4,7 @@ class MapistoShape:
         self.precision_in_km = precision_in_km
     
     def __str__(self):
-        return str(
-            {
-                "d_path" : self.d_path,
-                "precision_in_km" : self.precision_in_km
-            }
-        )
+        return f'({self.precision_in_km}, "{self.d_path[:10]}...")'
     def equals(self, other):
-        return (isinstance(other, MapistoShape) and other.d_path==self.d_path and other.precision_in_km==self.precision_in_km )
+        assert isinstance(other, MapistoShape)
+        return other.d_path==self.d_path and other.precision_in_km==self.precision_in_km
