@@ -136,9 +136,16 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/State"
+                type: object
+                properties:
+                  states:
+                    type : array
+                    items :
+                      $ref: "#/components/schemas/State"
+                  territories:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Territory"
   /state:
     post:
       tags:
@@ -193,34 +200,6 @@ paths:
         "404" : 
           description: tuple (state_id, validity_start, validity_end) not found
 
-  /state/from_territory/{territory_id}:
-    get:
-      tags : 
-        - State
-      summary: Returns a state's information from a territory id
-      parameters:
-        - name : territory_id
-          in : path
-          required: true
-          schema :
-            $ref : "#/components/schemas/Territory/properties/territory_id"
-          example : 1
-        - name: date
-          in: query
-          required: true
-          schema:
-            type: string
-            format: datetime
-          example: "1918-02-01T15:00:00Z"
-      responses:
-        "200" :
-          content:
-            application/json :
-              schema : 
-                $ref : "#/components/schemas/State"
-          description: State info retrieved
-        "404" :
-          description: Territory not found
   /state/{state_id}:
     get:
       tags : 
@@ -249,33 +228,6 @@ paths:
           description: State info retrieved
         "404" :
           description: Territory not found
-  /state/{state_id}/split:
-    put:
-      tags : 
-        - State
-      summary: Split a state and its territories in time. Useful to change a state lifespan
-      parameters:
-        - name : state_id
-          in : path
-          required: true
-          schema :
-            $ref : "#/components/schemas/State/properties/state_id"
-          example : 1
-
-        - name: date
-          in: query
-          required: true
-          schema:
-            type: string
-            format: datetime
-          example: "1918-02-01T15:00:00Z"
-      responses:
-        "200" :
-          description: State correctly split
-        "404" :
-          description: State not found
-        "400" :
-          description: The state was not alive on the mentioned split date
   /state_search:
     get:
       tags : 
@@ -314,314 +266,66 @@ paths:
                 items : 
                   $ref : "#/components/schemas/State"
           description: A list of state retrieved
-  /state/{state_id}/concurrent_states:
-    get:
-      tags:
-        - State
-      summary: "
-      Returns, for a state, represented by (state_id), and a possible extend period, all (state_id, state_names) which have a similar name
-      Supposes every state has only 1 state representation
-      "
-      parameters :
-        - name: state_id
-          in : path
-          description: The id of the state to be extended
-          required : true
-          schema :
-            $ref : "#/components/schemas/State/properties/state_id"
-          example : 1
-        - name: newStart
-          in: query
-          required: true
-          description: The start of the new period to consider
-          schema:
-            type: string
-            format: datetime
-          example: "1918-01-01T00:00:00Z"
-        - name: newEnd
-          in: query
-          required: true
-          description: The end of the new period to consider
-          schema:
-            type: string
-            format: datetime
-          example: "1920-01-01T00:00:00Z"
-      responses:
-        "200" :
-          content:
-            application/json :
-              schema : 
-                type : array
-                items : 
-                  $ref : "#/components/schemas/State"
-          description: A list of the state representations that will conflict or could be linked
-        "404" :
-          description: The state state_id was not found at the date date
-  /state/{state_id}/extend:
-    put:
-      tags:
-        - State
-      summary: "
-      Extends a state period to the new period provided
-      Automatically merges it with the states which have the same name within the period. And remove them
-      Also merges the state which are provided in parameter, and remove them
-      "
-      parameters :
-        - name: state_id
-          in : path
-          description: The id of the state to extend
-          required : true
-          schema :
-            $ref : "#/components/schemas/State/properties/state_id"
-          example : 1
-        - name: newStart
-          in: query
-          required: true
-          description: The start of the new period to consider
-          schema:
-            type: string
-            format: datetime
-          example: "1918-01-01T00:00:00Z"
-        - name: newEnd
-          in: query
-          required: true
-          description: The end of the new period to consider
-          schema:
-            type: string
-            format: datetime
-          example: "1920-01-01T00:00:00Z"
-      requestBody :
-        description: A list of states to be merged with the extended state
-        content:
-          application/json:
-            schema :
-              type: array
-              items : 
-                type : number
-      responses:
-        "200" :
-          content:
-            application/json :
-              schema : 
-                type : array
-                items : 
-                  $ref : "#/components/schemas/State"
-          description: A list of the state representations that will conflict or could be linked
-        "404" :
-          description: The state state_id was not found within the period
-        "400" : 
-          description: "
-          The period provided does not include the existing one. Cannot extend
-          One of the states to be merged has a period not included in the provided period
-          "
-  /state/{state_id}/absorb/{to_be_absorbed}:
-    put:
-      tags:
-        - State
-      summary: "
-      Merge to_be_absorbed state in state_id, reassign all territories
-      "
-      parameters :
-        - name: state_id
-          in : path
-          description: The id of the state which whill contains to_be_absorbed
-          required : true
-          schema :
-            $ref : "#/components/schemas/State/properties/state_id"
-          example : 1
-        - name: to_be_absorbed
-          in : path
-          description: The id of the state that will be absorbed
-          required : true
-          schema :
-            $ref : "#/components/schemas/State/properties/state_id"
-          example : 2
-      responses:
-        "200" :
-          content:
-            application/json :
-              schema : 
-                type : number
-          description: The id of the merged state
-        "404" :
-          description: Either to_be_absorbed or state_id was not found
-        "400" : 
-          description: "
-            to_be_absorbed has a validity period that lies outside of state_id validity period
-          "
+  # /state/{state_id}/absorb/{to_be_absorbed}:
+  #   put:
+  #     tags:
+  #       - State
+  #     summary: "
+  #     Merge to_be_absorbed state in state_id, reassign all territories
+  #     "
+  #     parameters :
+  #       - name: state_id
+  #         in : path
+  #         description: The id of the state which whill contains to_be_absorbed
+  #         required : true
+  #         schema :
+  #           $ref : "#/components/schemas/State/properties/state_id"
+  #         example : 1
+  #       - name: to_be_absorbed
+  #         in : path
+  #         description: The id of the state that will be absorbed
+  #         required : true
+  #         schema :
+  #           $ref : "#/components/schemas/State/properties/state_id"
+  #         example : 2
+  #     responses:
+  #       "200" :
+  #         content:
+  #           application/json :
+  #             schema : 
+  #               type : number
+  #         description: The id of the merged state
+  #       "404" :
+  #         description: Either to_be_absorbed or state_id was not found
+  #       "400" : 
+  #         description: "
+  #           to_be_absorbed has a validity period that lies outside of state_id validity period
+  #         "
 
-  /territory/{territory_id}/concurrent_territories:
-    get:
-      tags:
-        - Territories
-      summary: "
-      Returns, for a territory, the coordinates of its supposed capited and a possible extend period, all territories across time which could conflict (i.e. lay on the capital)"
-      parameters :
-        - name: territory_id
-          in : path
-          description: The id of the state to be extended
-          required : true
-          schema :
-            $ref : "#/components/schemas/Territory/properties/territory_id"
-          example : 31
-        - name: newStart
-          in: query
-          required: true
-          description: The start of the new period to consider
-          schema:
-            type: string
-            format: datetime
-          example: "1918-01-01T00:00:00Z"
-        - name: newEnd
-          in: query
-          required: true
-          description: The end of the new period to consider
-          schema:
-            type: string
-            format: datetime
-          example: "1923-01-01T00:00:00Z"
-        - name : capital_x
-          in: query
-          required: true
-          description : The X coordinate of the capital
-          example : 1084
-          schema :
-            type: number
-        - name : capital_y
-          in: query
-          required: true
-          description : The Y coordinate of the capital
-          example : 386
-          schema :
-            type: number
-      responses:
-        "200" :
-          content:
-            application/json :
-              schema : 
-                type : object
-                properties:
-                  to_be_merged :
-                    type : array
-                    items : 
-                      $ref : "#/components/schemas/Territory"
-                    description: A list of territories, without path data, which will have to be merged if the territory period is extended
-                  conflicting_territory_start :
-                    $ref : "#/components/schemas/Territory"
-                  conflicting_territory_end :
-                    $ref : "#/components/schemas/Territory"
-          description : "The list of concurrent territories, and possible conclicts"
-        "404" :
-          description: The territory was not found at the date date
-        "400" :
-          description : The capital is not contained in the territory polygon 
-  /territory/{territory_id}/extend:
-    put:
-      tags:
-        - Territory
-      summary: "
-      Extends a territory period to the new period provided
-      Removes the territories specified by their ids in the query
-      "
-      parameters :
-        - name: territory_id
-          in : path
-          description: The id of the territory to extend
-          required : true
-          schema :
-            $ref : "#/components/schemas/Territory/properties/territory_id"
-          example : 1
-        - name: newStart
-          in: query
-          required: true
-          description: The start of the new period to consider
-          schema:
-            type: string
-            format: datetime
-          example: "1918-01-01T00:00:00Z"
-        - name: newEnd
-          in: query
-          required: true
-          description: The end of the new period to consider
-          schema:
-            type: string
-            format: datetime
-          example: "1920-01-01T00:00:00Z"
-      requestBody :
-        description: A list of territory ids to be removed
-        content:
-          application/json:
-            schema :
-              type: array
-              items : 
-                $ref : "#/components/schemas/Territory/properties/territory_id"
-      responses:
-        "200" :
-          content:
-            application/json :
-              schema : 
-                $ref : "#/components/schemas/Territory"
-          description: The updated territory
-        "404" :
-          description: One of the territories to extend or to remove was not found within the period
-  /territory/{territory_id}/reassign_to/{state_id}:
-    put:
-      tags:
-        - Territory
-      summary: "
-      Moves a territory from one state to another
-      "
-      parameters :
-        - name: territory_id
-          in : path
-          description: The id of the territory to reassign
-          required : true
-          schema :
-            $ref : "#/components/schemas/Territory/properties/territory_id"
-          example : 1
-        - name: state_id
-          in : path
-          description: The id of the state to give the territory to
-          required : true
-          schema :
-            $ref : "#/components/schemas/State/properties/state_id"
-          example : 1
-      responses:
-        "200" :
-          content:
-            application/json :
-              schema : 
-                type : number
-          
-          description: The updated territory id
-        "404" :
-          description: The territory or the state was not found
-        "400":
-          description : "The territory period lies outside of the state validity" 
-  /movie/{state_id}:
-    get:
-      tags:
-        - Video
-      summary: Retrieve the evolution of a state through its lifespan
-      parameters: 
-        - name : state_id
-          in: path
-          description: The id of the state which we want to play the evolution
-          required : true
-          schema : 
-            $ref : "#/components/schemas/Territory/properties/territory_id"
-          example : 79
-      responses:
-        "200":
-          description: The state evolution was correctly retrieved
-          content:
-            application/json :
-              schema :
-                type: array
-                items :
-                  $ref: "#/components/schemas/Scene"
-        "404" :
-          description: State not found
+  # /movie/{state_id}:
+  #   get:
+  #     tags:
+  #       - Video
+  #     summary: Retrieve the evolution of a state through its lifespan
+  #     parameters: 
+  #       - name : state_id
+  #         in: path
+  #         description: The id of the state which we want to play the evolution
+  #         required : true
+  #         schema : 
+  #           $ref : "#/components/schemas/Territory/properties/territory_id"
+  #         example : 79
+  #     responses:
+  #       "200":
+  #         description: The state evolution was correctly retrieved
+  #         content:
+  #           application/json :
+  #             schema :
+  #               type: array
+  #               items :
+  #                 $ref: "#/components/schemas/Scene"
+  #       "404" :
+  #         description: State not found
 
 components:
   schemas:
