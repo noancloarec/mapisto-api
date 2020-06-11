@@ -15,6 +15,14 @@ class State:
 
     def __str__(self):
         return f"[{str(self.validity_start)}, {str(self.validity_end)}[ : (no{self.state_id})"
+
+    def to_dict(self):
+        return {
+            'validity_start' : self.validity_start,
+            'validity_end' : self.validity_end,
+            'state_id' : self.state_id,
+            'representations' : self.representations
+        }
     
     @staticmethod
     def from_dict(json_dict):

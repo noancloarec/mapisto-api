@@ -1,5 +1,5 @@
 from datetime import datetime
-from dateutil.parser import parse
+from dateutil.parser import parse, ParserError
 from werkzeug.exceptions import BadRequest
 
 class StateRepresentation:
@@ -24,8 +24,15 @@ class StateRepresentation:
             validity_start = parse(start_string).replace(tzinfo=None)
             validity_end=parse(end_string).replace(tzinfo=None)
             return StateRepresentation(json_dict.get('name').strip(), validity_start, validity_end, json_dict.get('color'))
-        except TypeError:
-            raise BadRequest(f'Wrong date format for period : ( {start_string} , {end_string} )')
+        except (TypeError, ParserError):
+            raise BadRequest(f'Wrong date format for period : ( "{start_string}" , "{end_string}" )')
+    
+    def to_dict(self):
+        return {
+            'name' : self.name,
+            'validity_start' : self.validity_start,
+            'validity_end' : self.validity_end,
+        }
     
     def equals(self, other):
         assert isinstance(other, StateRepresentation)

@@ -1,6 +1,7 @@
 from .Territory import Territory
 import pytest
 from werkzeug.exceptions import BadRequest
+from datetime import datetime
 
 territory_dict = {
     'd_path' : "M 0.1 0 L 10.12 10 L 0 15.7 L -2 7 L -3 6 L -5 0 Z",
@@ -24,6 +25,7 @@ partial_territory_pa_ok = {
 def test_territory_from_dict():
     t = Territory.from_dict(territory_dict)
     assert isinstance(t, Territory)
+    
 def test_partial_territory_ok():
     t = Territory.from_dict(partial_territory_ok)
     assert isinstance(t, Territory)
@@ -33,3 +35,9 @@ def test_partial_territory_ok():
 def test_partial_territory_not_ok():
     with pytest.raises(BadRequest):
         Territory.from_dict(partial_territory_pa_ok)
+
+def test_territory_to_dict():
+    terr = Territory.from_dict(territory_dict)
+    as_dict = terr.to_dict()
+    assert as_dict['name'] == 'Algeria'
+    assert isinstance(as_dict['validity_start'], datetime)

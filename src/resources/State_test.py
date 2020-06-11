@@ -147,3 +147,20 @@ def test_from_dict_2_representation_period_intersects():
     with pytest.raises(BadRequest):
         State.from_dict(state_with_representations(state_dict, rpz))
 
+def test_to_dict():
+    state = State(1, parse('1919-01-24T00:23:00Z'), parse('1924-01-01T00:00:00Z'), [
+        StateRepresentation.from_dict({
+        'name' : 'France',
+        'validity_start' : '1919-01-24T00:23:00Z',
+        'validity_end' : '1920-01-01T00:00:01Z',
+    }),
+    StateRepresentation.from_dict({
+        'name' : '',
+        'validity_start' : '1920-01-01T00:00:00Z',
+        'validity_end' : '1924-01-01T00:00:00Z',
+    })
+    ])
+    as_dict = state.to_dict()
+    assert len(as_dict["representations"]) == 2
+    assert isinstance(as_dict['representations'][0], StateRepresentation)
+    assert as_dict["representations"][0].name == 'France'

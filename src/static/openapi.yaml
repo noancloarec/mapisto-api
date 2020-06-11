@@ -266,6 +266,31 @@ paths:
                 items : 
                   $ref : "#/components/schemas/State"
           description: A list of state retrieved
+  /territory:
+    post:
+      tags:
+        - Territories
+      summary: Add a territory
+      requestBody:
+        description: The territory to add
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Territory"
+      responses:
+        "200":
+          description: Territory added
+          content:
+            application/json :
+              schema :
+                type: number
+                description: The id of the added territory
+        "400":
+          description: Malformed Territory
+        "404":
+          description: Parent state not found
+
   # /state/{state_id}/absorb/{to_be_absorbed}:
   #   put:
   #     tags:
@@ -361,8 +386,11 @@ components:
           validity_start:
             type : string
             format : datetime
+            example : "1918-01-01T00:00:00Z"
           validity_end : 
             type : string
+            format: datetime
+            example : "1919-01-01T00:00:00Z"
           name:
             type: string
             example: Austria-Hungary

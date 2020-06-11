@@ -36,6 +36,14 @@ class BoundingBox:
     def get_area_percentage_in_common(self, other):
         return self.intersection(other).area() / self.union(other).area() * 100
 
+    def to_dict(self):
+        return {
+            "x": self.x,
+            "y": self.y,
+            "width": self.width,
+            "height": self.height
+        }
+
 
     def __str__(self):
         return str((self.x, self.y, self.width, self.height))

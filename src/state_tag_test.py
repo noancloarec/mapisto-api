@@ -21,3 +21,19 @@ def test_add_state():
     with pytest.raises(Conflict):
         StateTag.post(to_add)
 
+def test_add_state_empty_name_no_conflict():
+    to_add = State.from_dict({
+        'validity_start' : '1919-01-24T00:23:00Z',
+        'validity_end' : '1920-01-01T00:00:00Z',
+        'representations' : [
+            {
+            'name' :  '',
+            'validity_start' : '1919-01-24T00:23:00Z',
+            'validity_end' : '1920-01-01T00:00:00Z',
+            }
+        ]
+    })
+    StateTag.post(to_add)
+    # should not raise errors
+    StateTag.post(to_add)
+

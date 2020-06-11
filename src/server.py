@@ -100,7 +100,6 @@ def extract_map_request():
     bbmax_x = int(float(request.args.get('max_x')))
     bbmin_y = int(float(request.args.get('min_y')))
     bbmax_y = int(float(request.args.get('max_y')))
-    logging.debug(bbmax_x)
     bbox = BoundingBox(bbmin_x, bbmin_y, bbmax_x-bbmin_x, bbmax_y-bbmin_y)
     return (precision, bbox)
 
