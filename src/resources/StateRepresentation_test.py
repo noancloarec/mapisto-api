@@ -29,6 +29,7 @@ def test_from_dict_bad_date():
 def test_to_dict():
     rep = StateRepresentation.from_dict(dict_rpz)
     as_dict = rep.to_dict()
+    assert 'color' in as_dict
     assert as_dict['name']=='France'
     assert isinstance(as_dict['validity_start'], datetime)
     assert isinstance(as_dict['validity_end'], datetime)

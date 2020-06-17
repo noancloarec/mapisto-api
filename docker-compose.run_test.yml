@@ -1,6 +1,6 @@
 version: "3.4"
 services:
-  mapisto-api:
+  mapisto-api_test:
     build: .
     volumes:
       - ./src:/app/src
@@ -13,7 +13,7 @@ services:
   database_test:
     image: postgres:12-alpine
     ports: 
-      - 5433:5432
+      - 5434:5432
     volumes:
       - $HOME/docker/volumes/postgres:/var/lib/postgresql/data
     healthcheck:

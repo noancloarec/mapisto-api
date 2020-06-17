@@ -22,4 +22,7 @@ class TerritoryTag:
     @staticmethod
     def get(territory_id):
         with get_cursor() as cursor:
-            return TerritoryCRUD.get(cursor, territory_id)
+            territory = TerritoryCRUD.get(cursor, territory_id)
+            assert territory.representations[0].precision_in_km == 0
+            territory.representations = [territory.representations[0]]
+            return territory

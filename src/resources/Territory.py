@@ -45,6 +45,7 @@ class Territory:
             raise BadRequest('Json is incomplete' + str(e))
     def to_dict(self) : 
         return {
+            'territory_id' : self.territory_id,
             'd_path': self.representations[0].d_path ,
             'state_id': self.state_id ,
             'validity_start' : self.validity_start ,

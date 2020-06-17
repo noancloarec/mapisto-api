@@ -50,3 +50,25 @@ class BoundingBox:
 
     def equals(self, other):
         return isinstance(other, BoundingBox) and (other.x, other.y, other.width, other.height)==(self.x, self.y, self.width, self.height)
+    
+    def center(self):
+        return (self.x+self.width / 2, self.y+self.height/2)
+
+    def enlarge_to_aspect_ratio(self, aspect_ratio) :
+        aspect = self.width / self.height
+        if aspect < aspect_ratio :
+            return BoundingBox(
+                y = self.y,
+                height = self.height,
+                width= aspect_ratio * self.height,
+                x= self.x - (aspect_ratio * self.height - self.width) / 2
+            )
+        elif aspect > aspect_ratio :
+            return BoundingBox(
+                width=self.width,
+                x=self.x,
+                height= self.width / aspect_ratio,
+                y= self.y - ( self.width/aspect_ratio - self.height) / 2
+            )
+        else :
+            return self

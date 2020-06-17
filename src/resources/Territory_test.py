@@ -40,4 +40,5 @@ def test_territory_to_dict():
     terr = Territory.from_dict(territory_dict)
     as_dict = terr.to_dict()
     assert as_dict['name'] == 'Algeria'
+    assert 'territory_id' in as_dict
     assert isinstance(as_dict['validity_start'], datetime)

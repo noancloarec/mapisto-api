@@ -129,10 +129,9 @@ paths:
           schema:
             type: number
           example: 1000.0
-
       responses:
         "200":
-          description: All states returned
+          description: Map was retrieved
           content:
             application/json:
               schema:
@@ -146,6 +145,51 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Territory"
+
+  /map/{state_id}:
+    get:
+      tags:
+        - Map
+      summary: Returns a map of the state (and neighbors) at a specific time 
+      parameters:
+        - name: state_id
+          in: path
+          required: true
+          description: The id of the state to retrieve
+          schema:
+            $ref : "#/components/schemas/State/properties/state_id"
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: datetime
+          example: "1918-02-01T15:00:00Z"
+        - name: pixel_widh
+          in: query
+          required: true
+          description: The required precision, in kilometers
+          schema:
+            type: number
+          example: 1.0
+      responses:
+        "200":
+          description: Map was retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  states:
+                    type : array
+                    items :
+                      $ref: "#/components/schemas/State"
+                  territories:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Territory"
+                  bounding_box:
+                    $ref: "#/components/schemas/BoundingBox"
   /state:
     post:
       tags:
@@ -212,13 +256,6 @@ paths:
           schema :
             $ref : "#/components/schemas/State/properties/state_id"
           example : 1
-        - name: date
-          in: query
-          required: true
-          schema:
-            type: string
-            format: datetime
-          example: "1918-02-01T15:00:00Z"
       responses:
         "200" :
           content:
@@ -290,6 +327,27 @@ paths:
           description: Malformed Territory
         "404":
           description: Parent state not found
+  /territory/{territory_id}:
+    get:
+      tags : 
+        - Territories
+      summary: Returns a territory, with highest precision
+      parameters:
+        - name : territory_id
+          in : path
+          required: true
+          schema :
+            $ref : "#/components/schemas/Territory/properties/territory_id"
+          example : 1
+      responses:
+        "200" :
+          content:
+            application/json :
+              schema : 
+                $ref : "#/components/schemas/Territory"
+          description: Territory info retrieved
+        "404" :
+          description: Territory not found
 
   # /state/{state_id}/absorb/{to_be_absorbed}:
   #   put:

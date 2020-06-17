@@ -1,5 +1,6 @@
 from .db import get_cursor
 from .State_CRUD import StateCRUD
+from .Territory_CRUD import TerritoryCRUD, Territory
 from resources.State import State
 from resources.StateRepresentation import StateRepresentation
 from .db import get_cursor
@@ -159,3 +160,17 @@ def test_get_by_name_several_matches():
         assert len(res) >= 2
         assert any(st.equals(france_2012_2018) for st in res)
         assert any(st.equals(france_2001_2003) for st in res)
+
+def test_get_bbox_no_territories():
+    with get_cursor() as curs:
+        state_id = StateCRUD.add(curs, france_2012_2018)
+        try :
+            with pytest.raises(NotFound):
+                StateCRUD.get_bbox(curs, state_id, year_to_date(2013))
+        finally :
+            StateCRUD.delete(curs, state_id)
+
+def test_get_bbox_no_state():
+    with get_cursor() as curs:
+        with pytest.raises(NotFound):
+            StateCRUD.get_bbox(curs, -1, year_to_date(2014))

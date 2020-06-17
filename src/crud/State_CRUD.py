@@ -1,4 +1,5 @@
 from resources.State import State
+from resources.BoundingBox import BoundingBox
 from datetime import datetime
 from werkzeug.exceptions import NotFound
 from resources.StateRepresentation import StateRepresentation
@@ -45,7 +46,24 @@ class StateCRUD:
             name, start, end, color = row[2], row[3], row[4], row[5]
             res.representations.append(StateRepresentation(name, start, end, color))
         return res
-            
+
+    @staticmethod
+    def get_bbox(cursor, id, date):
+        assert isinstance(id, int)
+        assert isinstance(date, datetime)
+        cursor.execute('''
+            SELECT MIN(min_x), MIN(min_y), MAX(max_x) , MAX(max_y) 
+            FROM territories
+            WHERE 
+                state_id=%s AND
+                validity_start <= %s AND
+                validity_end > %s
+        ''', (id, date, date))
+        row = cursor.fetchone()
+        if row[0] is None:
+            raise NotFound(f'No map for state {id} at {date.isoformat()} : no territories found at date or non existent state')
+        min_x, min_y, max_x, max_y = row
+        return BoundingBox(min_x, min_y, max_x-min_x, max_y - min_y)
 
 
 

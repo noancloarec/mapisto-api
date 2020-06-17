@@ -71,6 +71,8 @@ def test_add_and_get():
         assert TerritoryCRUD.count(cursor) == old_count+1
         retrieved = TerritoryCRUD.get(cursor, terr_id)
         assert isinstance(retrieved, Territory)
+        assert isinstance(retrieved.territory_id, int)
+        assert retrieved.territory_id > 0
         print('source', algeria)
         print('retrieved', retrieved)
         assert retrieved.equals(algeria)

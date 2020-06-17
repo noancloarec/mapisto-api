@@ -12,6 +12,7 @@ class StateRepresentation:
         self.validity_start = validity_start
         self.validity_end = validity_end
         self.color = color
+
     def is_right_after(self, other):
         assert isinstance(other, StateRepresentation)
         return self.validity_start == other.validity_end
@@ -32,6 +33,7 @@ class StateRepresentation:
             'name' : self.name,
             'validity_start' : self.validity_start,
             'validity_end' : self.validity_end,
+            'color' : self.color
         }
     
     def equals(self, other):

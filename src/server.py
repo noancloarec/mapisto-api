@@ -47,19 +47,33 @@ def send_static(path):
 
 
 @app.route('/map', methods=['GET'])
-def get_states():
+def get_map():
     date = date_from_request('date')
     precision, bbox = extract_map_request()
     return jsonify(MapTag.get(bbox, date, precision))
+
+@app.route('/map/<int:state_id>', methods=['GET'])
+def get_map_by_state(state_id):
+    date = date_from_request('date')
+    precision = float(request.args.get('pixel_width'))
+    return jsonify(MapTag.get_by_state(state_id, date, precision))
 
 
 @app.route('/state', methods=['POST'])
 def post_state():
     return jsonify(StateTag.post(State.from_dict(request.json)))
 
+@app.route('/state/<int:state_id>', methods=['GET'])
+def get_state(state_id):
+    return jsonify(StateTag.get(state_id))
+
 @app.route('/territory', methods=['POST'])
 def post_territory():
     return jsonify(TerritoryTag.post(Territory.from_dict(request.json)))
+
+@app.route('/territory/<int:territory_id>', methods=['GET'])
+def get_territory(territory_id):
+    return jsonify(TerritoryTag.get(territory_id))
 
 
 @app.route('/land', methods=['POST'])
