@@ -67,7 +67,7 @@ class Territory:
             color : {self.color},
         '''
 
-    def is_outdated(self, at:datetime):
+    def is_outdated(self, at):
         assert isinstance(at, datetime)
         return at < self.validity_start or at >= self.validity_end
     

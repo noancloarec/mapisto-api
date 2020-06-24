@@ -6,7 +6,6 @@ from resources.MapistoShape import MapistoShape
 from resources.BoundingBox import BoundingBox
 from resources.Land import Land
 import copy
-import psycopg2.errors
 
 test_path = "M 0.1 0 L 10.12 10 L 0 15.7 L -2 7 L -3 6 L -5 0 Z"
 example_land = Land(None, [MapistoShape(test_path, 0)], BoundingBox(-5,0,15,16))

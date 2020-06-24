@@ -146,7 +146,7 @@ paths:
                     items:
                       $ref: "#/components/schemas/Territory"
 
-  /map/{state_id}:
+  /map_for_state/{state_id}:
     get:
       tags:
         - Map
@@ -165,10 +165,54 @@ paths:
             type: string
             format: datetime
           example: "1918-02-01T15:00:00Z"
-        - name: pixel_widh
+        - name: pixel_width
           in: query
           required: true
-          description: The required precision, in kilometers
+          description: Pixel width of the map (precision will be computed accordingly)
+          schema:
+            type: number
+          example: 1.0
+      responses:
+        "200":
+          description: Map was retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  states:
+                    type : array
+                    items :
+                      $ref: "#/components/schemas/State"
+                  territories:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Territory"
+                  bounding_box:
+                    $ref: "#/components/schemas/BoundingBox"
+  /map_for_territory/{territory_id}:
+    get:
+      tags:
+        - Map
+      summary: Returns a map of the territory (and neighbors) at a specific time 
+      parameters:
+        - name: territory_id
+          in: path
+          required: true
+          description: The id of the territory to retrieve
+          schema:
+            $ref : "#/components/schemas/Territory/properties/territory_id"
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: datetime
+          example: "1918-02-01T15:00:00Z"
+        - name: pixel_width
+          in: query
+          required: true
+          description: The pixel size of the map (precision will be computed accordingly)
           schema:
             type: number
           example: 1.0
@@ -215,24 +259,8 @@ paths:
     put:
       tags:
         - State
-      parameters:
-        - name: validity_start
-          in: query
-          required: true
-          schema:
-            type: string
-            format: datetime
-          example: "1918-01-01T00:00:00Z"
-        - name: validity_end
-          in: query
-          required: true
-          schema:
-            type: string
-            format: datetime
-          example: "1919-01-01T00:00:00Z"
-      summary : If a match (id, validity_start, validity_end) is found in db, changes the name of the state
+      summary : Updates the state in body
       requestBody :
-        description: The state to which the name can be modified
         required : true
         content :
           application/json:
@@ -280,20 +308,6 @@ paths:
           schema :
             type : string
           example : "fra"
-        - name: start
-          in: query
-          required: false
-          schema:
-            type: string
-            format: datetime
-          example: "1918-02-01T15:00:00Z"
-        - name: end
-          in: query
-          required: false
-          schema:
-            type: string
-            format: datetime
-          example: "1918-02-01T15:00:00Z"
       responses:
         "200" :
           content:
@@ -318,6 +332,31 @@ paths:
       responses:
         "200":
           description: Territory added
+          content:
+            application/json :
+              schema :
+                type: number
+                description: The id of the added territory
+        "400":
+          description: Malformed Territory
+        "404":
+          description: Parent state not found
+    put:
+      tags:
+        - Territories
+      summary: Edit a territory
+      requestBody:
+        description: "The territory to edit.
+         May create 1 or 2 other territories if the territory is assigned to another state which lifespan does not include the initial territory. 
+         Because the database consistency requires the territory lifespan to be included in it's sovereign state's lifespan"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Territory"
+      responses:
+        "200":
+          description: Territory Edited
           content:
             application/json :
               schema :

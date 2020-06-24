@@ -4,6 +4,7 @@ from werkzeug.exceptions import NotFound
 from resources.BoundingBox import BoundingBox
 from resources.MapistoShape import MapistoShape
 from datetime import datetime
+import logging
 class TerritoryCRUD:
     @staticmethod
     def add(cursor, territory):
@@ -69,7 +70,10 @@ class TerritoryCRUD:
     def count(cursor):
         cursor.execute('SELECT COUNT(*) FROM territories')
         return cursor.fetchone()[0]
-    
+
+    @staticmethod 
+    def delete(cursor, territory_id):
+        cursor.execute('DELETE FROM Territories WHERE territory_id=%s', (territory_id,))
 
     @staticmethod
     def get_within_bbox_at_time(cursor, bbox, date, precision_level):
@@ -139,3 +143,50 @@ class TerritoryCRUD:
             for (territory_id, state_id, x, y, width, height, validity_start, validity_end, color, name, d_path) 
             in cursor.fetchall()
             ]
+    @staticmethod
+    def get_by_state(cursor, state_id):
+        assert isinstance(state_id, int)
+        cursor.execute('''
+            SELECT territory_id, min_x, min_y, max_x-min_x, max_y-min_y, validity_start, validity_end, color, name
+            FROM territories
+            WHERE state_id=%s
+        ''', (state_id,))
+        res = []
+        for row in cursor.fetchall():
+            (territory_id, x, y, width, height, validity_start, validity_end, color, name) = row
+            res.append(Territory(territory_id, [], state_id, BoundingBox(x, y, width, height), validity_start, validity_end, color, name))
+        return res
+
+    @staticmethod
+    def edit(cursor, territory, change_state_id=False,change_name=False, change_color=False, change_start=False, change_end=False):
+        assert isinstance(territory, Territory)
+        if change_state_id:
+            cursor.execute('''
+                UPDATE territories
+                SET state_id=%s
+                WHERE territory_id=%s
+            ''', (territory.state_id, territory.territory_id))
+        if change_name:
+            cursor.execute('''
+                UPDATE territories
+                SET name=%s
+                WHERE territory_id=%s
+            ''', (territory.name, territory.territory_id))
+        if change_color:
+            cursor.execute('''
+                UPDATE territories
+                SET color=%s
+                WHERE territory_id=%s
+            ''', (territory.color, territory.territory_id))
+        if change_start:
+            cursor.execute('''
+                UPDATE territories
+                SET validity_start=%s
+                WHERE territory_id=%s
+            ''', (territory.validity_start, territory.territory_id))
+        if change_end:
+            cursor.execute('''
+                UPDATE territories
+                SET validity_end=%s
+                WHERE territory_id=%s
+            ''', (territory.validity_end, territory.territory_id))

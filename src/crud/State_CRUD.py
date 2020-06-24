@@ -3,6 +3,7 @@ from resources.BoundingBox import BoundingBox
 from datetime import datetime
 from werkzeug.exceptions import NotFound
 from resources.StateRepresentation import StateRepresentation
+import psycopg2.errors
 class StateCRUD:
     @staticmethod
     def add(cursor, state):
@@ -18,7 +19,32 @@ class StateCRUD:
                     rpz.validity_end, rpz.color)
             )
         return state_id
-
+    
+    @staticmethod
+    def edit(cursor, updated_state):
+        assert isinstance(updated_state, State)
+        cursor.execute('''
+            DELETE FROM state_names
+            WHERE state_id=%s
+        ''', (updated_state.state_id, ))
+        cursor.execute('''
+            UPDATE states SET validity_start=%s
+            WHERE state_id=%s AND validity_start!=%s
+        ''', (updated_state.validity_start, updated_state.state_id, updated_state.validity_start ))
+        cursor.execute('''
+            UPDATE states SET validity_end=%s
+            WHERE state_id=%s AND validity_end!=%s
+        ''', (updated_state.validity_end, updated_state.state_id, updated_state.validity_end ))
+        for rpz in updated_state.representations:
+            try:
+                cursor.execute(
+                    'INSERT INTO state_names(name, state_id, validity_start, validity_end, color) VALUES(%s, %s, %s, %s, %s)',
+                    (rpz.name, updated_state.state_id, rpz.validity_start,
+                        rpz.validity_end, rpz.color)
+                )
+            # Foreign key violation : state_id is not referenced in table states
+            except psycopg2.errors.lookup('23503'):
+                raise NotFound(f'State does not exist : {updated_state.state_id}')
     @staticmethod
     def count(cursor):
         cursor.execute('''
@@ -92,3 +118,57 @@ class StateCRUD:
         cursor.execute('''
             DELETE FROM states WHERE state_id=%s
         ''', (state_id, ))
+
+    @staticmethod
+    def search(cursor, pattern):
+        assert isinstance(pattern, str)
+        cursor.execute('''
+                SELECT state_id
+                FROM state_names
+                WHERE
+                    name != '' AND
+                    (
+                        lower(name) LIKE(CONCAT('%%', lower(%s), '%%')) 
+                        OR lower(%s) LIKE (CONCAT('%%', lower(name), '%%'))
+                    )
+                GROUP BY state_id
+                LIMIT 20
+        ''', (pattern, pattern))
+        matching_state_ids = [row[0] for row in cursor.fetchall()]
+        for stid in matching_state_ids:
+            assert isinstance(stid, int)
+        return StateCRUD.get_many(cursor, matching_state_ids)
+
+    @staticmethod
+    def get_many(cursor, state_ids):
+        if len(state_ids)==0:
+            return []
+        cursor.execute('''
+            SELECT 
+                states.state_id, states.validity_start, states.validity_end,  
+                state_names.name, state_names.validity_start, state_names.validity_end, state_names.color
+            FROM states
+                INNER JOIN state_names ON state_names.state_id=states.state_id
+            WHERE 
+                states.state_id IN %s 
+            ORDER BY states.state_id,  state_names.validity_start
+
+        ''', (tuple(state_ids),))
+        records = cursor.fetchall()
+        current_state_id = None
+        res = []
+        for row in records:
+            (state_id, validity_start, validity_end, name, name_validity_start, name_validity_end, color) = row
+            representation = StateRepresentation(name, name_validity_start, name_validity_end, color)
+            if current_state_id != state_id:
+                current_state = State(state_id,
+                                      validity_start=validity_start,
+                                      validity_end=validity_end,
+                                      representations = [representation]
+                                      )
+                current_state_id = state_id
+                res.append(current_state)
+            else:
+                current_state.representations.append(representation)
+        return res
+

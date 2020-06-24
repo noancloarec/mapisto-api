@@ -54,3 +54,4 @@ def test_add_and_get_state() :
     assert isinstance(state, State)
     assert state.state_id==st_id
     assert state.validity_start==to_add.validity_start
+

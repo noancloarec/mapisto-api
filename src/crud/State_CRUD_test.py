@@ -10,7 +10,6 @@ from resources.BoundingBox import BoundingBox
 from werkzeug.exceptions import Conflict
 import copy
 import contextlib
-import psycopg2.errors
 
 from datetime import datetime
 from dateutil import parser

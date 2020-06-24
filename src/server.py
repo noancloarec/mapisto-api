@@ -52,20 +52,41 @@ def get_map():
     precision, bbox = extract_map_request()
     return jsonify(MapTag.get(bbox, date, precision))
 
-@app.route('/map/<int:state_id>', methods=['GET'])
+@app.route('/map_for_state/<int:state_id>', methods=['GET'])
 def get_map_by_state(state_id):
     date = date_from_request('date')
-    precision = float(request.args.get('pixel_width'))
-    return jsonify(MapTag.get_by_state(state_id, date, precision))
+    logging.debug(request.args)
+    pixel_width = float(request.args.get('pixel_width'))
+    return jsonify(MapTag.get_by_state(state_id, date, pixel_width))
 
+@app.route('/map_for_territory/<int:territory_id>', methods=['GET'])
+def get_map_by_territory(territory_id):
+    date = date_from_request('date')
+    pixel_width = float(request.args.get('pixel_width'))
+    return jsonify(MapTag.get_by_territory(territory_id, date, pixel_width))
 
 @app.route('/state', methods=['POST'])
 def post_state():
     return jsonify(StateTag.post(State.from_dict(request.json)))
 
+@app.route('/state', methods=['PUT'])
+def put_state():
+    logging.debug('REQUEST JSON')
+    logging.debug(request.json)
+    logging.debug('REQUEST BODY')
+    logging.debug(request)
+    return jsonify(StateTag.put(State.from_dict(request.json)))
+
 @app.route('/state/<int:state_id>', methods=['GET'])
 def get_state(state_id):
     return jsonify(StateTag.get(state_id))
+
+@app.route('/state_search', methods=['GET'])
+def search_state():
+    pattern = request.args.get('pattern')
+    if not pattern or not pattern.strip():
+        raise BadRequest('Empty pattern to search')
+    return jsonify(StateTag.search(pattern.strip()))
 
 @app.route('/territory', methods=['POST'])
 def post_territory():
