@@ -24,6 +24,8 @@ class StateRepresentation:
         try:
             validity_start = parse(start_string).replace(tzinfo=None)
             validity_end=parse(end_string).replace(tzinfo=None)
+            if validity_start >= validity_end:
+                raise BadRequest(f'Validity end({validity_end}) must be after validity start {validity_start}')
             return StateRepresentation(json_dict.get('name').strip(), validity_start, validity_end, json_dict.get('color'))
         except (TypeError, ParserError):
             raise BadRequest(f'Wrong date format for period : ( "{start_string}" , "{end_string}" )')
