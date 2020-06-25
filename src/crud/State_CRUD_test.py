@@ -18,14 +18,16 @@ example_state = State.from_dict({
     'validity_end' : '1924-01-01T00:00:00Z',
     'representations' : [
         {
-        'name' : 'Austria',
-        'validity_start' : '1919-01-24T00:23:00Z',
-        'validity_end' : '1920-01-01T00:00:00Z',
+            'name' : 'Austria',
+            'validity_start' : '1919-01-24T00:23:00Z',
+            'validity_end' : '1920-01-01T00:00:00Z',
+            'color' : '#000000'
         },
         {
             'name' : '',
             'validity_start' : '1920-01-01T00:00:00Z',
             'validity_end' : '1924-01-01T00:00:00Z',
+            'color' : '#000000'
         }
     ]
 })
@@ -84,16 +86,19 @@ france_2012_2018 = State.from_dict({
         'name' : 'France',
         'validity_start' : year_to_date(2012).isoformat(),
         'validity_end' : '2015-02-02T00:00:00Z',
+        'color' : '#000000'
         },
         {
         'name' : 'france with other name',
         'validity_start' : '2015-02-02T00:00:00Z',
         'validity_end' : '2015-02-03T00:00:00Z',
+        'color' : '#000000'
         },
         {
         'name' : 'France',
         'validity_start' : '2015-02-03T00:00:00Z',
         'validity_end' : year_to_date(2018).isoformat(),
+        'color' : '#000000'
         },
     ]
 })
@@ -151,6 +156,7 @@ def test_get_by_name_several_matches():
             'name' : 'France',
             'validity_start' : year_to_date(2001).isoformat(),
             'validity_end' : year_to_date(2003).isoformat(),
+            'color' : '#000000'
             },
         ]
     })

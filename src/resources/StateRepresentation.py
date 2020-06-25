@@ -17,6 +17,9 @@ class StateRepresentation:
         assert isinstance(other, StateRepresentation)
         return self.validity_start == other.validity_end
 
+    def period_intersects(self, start, end):
+        return self.validity_start < end and self.validity_end > start
+
     @staticmethod
     def from_dict(json_dict):
         start_string = json_dict['validity_start']
@@ -26,7 +29,7 @@ class StateRepresentation:
             validity_end=parse(end_string).replace(tzinfo=None)
             if validity_start >= validity_end:
                 raise BadRequest(f'Validity end({validity_end}) must be after validity start {validity_start}')
-            return StateRepresentation(json_dict.get('name').strip(), validity_start, validity_end, json_dict.get('color'))
+            return StateRepresentation(json_dict.get('name').strip(), validity_start, validity_end, json_dict['color'])
         except (TypeError, ParserError):
             raise BadRequest(f'Wrong date format for period : ( "{start_string}" , "{end_string}" )')
     

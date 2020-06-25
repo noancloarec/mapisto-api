@@ -39,16 +39,19 @@ france_1912_2018 = State.from_dict({
             'name': 'France',
             'validity_start': year_to_date(1912).isoformat(),
             'validity_end': '2015-02-02T00:00:00Z',
+            'color' : '#000000'
         },
         {
             'name': 'france with other name',
             'validity_start': '2015-02-02T00:00:00Z',
             'validity_end': '2015-02-03T00:00:00Z',
+            'color' : '#000000'
         },
         {
             'name': 'France',
             'validity_start': '2015-02-03T00:00:00Z',
             'validity_end': year_to_date(2018).isoformat(),
+            'color' : '#000000'
         },
     ]
 })

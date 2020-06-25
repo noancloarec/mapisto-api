@@ -7,7 +7,7 @@ from werkzeug.exceptions import Conflict
 from maps_geometry.consistency import territories_conflict
 from maps_geometry.compression import compress_territory
 from werkzeug.exceptions import BadRequest
-from color_utils.color_utils import colour_distance
+from color_utils.color_utils import colours_roughly_equal
 import logging
 
 class TerritoryTag:
@@ -89,9 +89,7 @@ class TerritoryTag:
         new_color = _get_contemporaneous_color(territory, new_state)
         if not old_color or not new_color:
             return new_color
-        logging.error(f"Colour distance : between {old_color} and {new_color}")
-        logging.error(colour_distance(old_color, new_color))
-        if colour_distance(old_color, new_color) < 15:
+        if colours_roughly_equal(old_color, new_color):
             # No need for a specific territory color if it is similar to new state color
             return None
         else:

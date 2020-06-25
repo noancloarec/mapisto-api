@@ -11,3 +11,6 @@ def colour_distance(hex_1, hex_2):
     [[lab1, lab2]] = skimage.color.rgb2lab([[hex_to_rgb(hex_1), hex_to_rgb(hex_2)]])
     # logging.error(f'lab1 : {hex_to_rgb(hex_1)}     lab2 : {hex_to_rgb(hex_2)}')
     return np.linalg.norm(lab1 - lab2)
+
+def colours_roughly_equal(hex_1, hex_2):
+    return colour_distance(hex_1, hex_2) < 15

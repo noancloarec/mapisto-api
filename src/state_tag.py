@@ -3,6 +3,7 @@ from crud.db import get_cursor
 from werkzeug.exceptions import Conflict
 from crud.State_CRUD import StateCRUD
 from crud.Territory_CRUD import TerritoryCRUD
+from color_utils.color_utils import colours_roughly_equal
 class StateTag:
 	@staticmethod
 	def post(state):
@@ -41,6 +42,41 @@ class StateTag:
 		assert isinstance(pattern, str)
 		with get_cursor() as cursor:
 			return StateCRUD.search(cursor, pattern)
+
+	@staticmethod
+	def merge(to_merge_id, sovereign_state_id):
+		assert isinstance(to_merge_id, int)
+		assert isinstance(sovereign_state_id, int)
+		with get_cursor() as cursor:
+			to_merge = StateCRUD.get(cursor, to_merge_id)
+			sovereign = StateCRUD.get(cursor, sovereign_state_id)
+			if to_merge.validity_start < sovereign.validity_start or to_merge.validity_end > sovereign.validity_end:
+				raise Conflict(f'The state to merge period {(to_merge.validity_start, to_merge.validity_end)} overflows the period of the sovereign state {(sovereign.validity_start, sovereign.validity_end)}')
+			territories_to_change = TerritoryCRUD.get_by_state(cursor, to_merge_id)
+			for territory in territories_to_change:
+				
+				# Color integrity check
+				its_color = territory.color
+				if not its_color:
+					candidate_colors = [r.color for r in to_merge.representations if r.period_intersects(territory.validity_start, territory.validity_end)]
+					# All representation matching with the territory have similar color => territory color can be determined (else too complex nothing is done)
+					if all(colours_roughly_equal(candidate_colors[0], c) for c in candidate_colors[1:]):
+						its_color = candidate_colors[0]
+				if its_color:
+					sovereign_color = [r.color for r in sovereign.representations if r.period_intersects(territory.validity_start, territory.validity_end)]
+					if all(colours_roughly_equal(c, its_color) for c in sovereign_color):
+						territory.color = None
+					# Destination color is different => set the territory color to preserve it
+					else :
+						territory.color = its_color
+					TerritoryCRUD.edit(cursor, territory, change_color=True)
+
+				territory.state_id = sovereign_state_id
+				TerritoryCRUD.edit(cursor, territory, change_state_id=True)
+			StateCRUD.delete(cursor, to_merge_id)	
+		return sovereign_state_id
+
+
 	
 	@staticmethod
 	def __check_name_conflicts(state, cursor):

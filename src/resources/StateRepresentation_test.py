@@ -7,6 +7,7 @@ dict_rpz = {
     'name': 'France',
     'validity_start': '1919-01-24T00:23:00Z',
     'validity_end': '1920-01-01T00:00:01Z',
+    'color' : '#000000'
 }
 
 
@@ -22,6 +23,7 @@ def test_from_dict_bad_date():
     'name': 'France',
     'validity_start': 'Jean friedrich1919-01-24T00:23:00Z',
     'validity_end': '1920-01-01T00:00:01Z',
+    'color' : '#000000'
     }
     with pytest.raises(BadRequest):
         StateRepresentation.from_dict(bad_rep)

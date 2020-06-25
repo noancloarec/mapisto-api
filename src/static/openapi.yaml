@@ -317,6 +317,36 @@ paths:
                 items : 
                   $ref : "#/components/schemas/State"
           description: A list of state retrieved
+  /merge_state/{state_id}/into/{sovereign_state_id}:
+    put:
+      tags:
+        - State
+      parameters:
+        - name : state_id
+          in : path
+          required: true
+          schema :
+            $ref : "#/components/schemas/State/properties/state_id"
+          example : 1
+        - name : sovereign_state_id
+          in : path
+          required: true
+          schema :
+            $ref : "#/components/schemas/State/properties/state_id"
+          example : 1
+
+      summary: Transfer all the territories of {state_id} to {sovereign_state_id}, preserving their color
+      responses:
+        "200":
+          description: States were merged
+          content:
+            application/json :
+              schema :
+                type: number
+                description: The id of the sovereign_state
+        "400":
+          description: Impossible merge, may be a date conflict, the sovereign_state period must include the state period.
+
   /territory:
     post:
       tags:

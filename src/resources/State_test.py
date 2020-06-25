@@ -59,6 +59,7 @@ def test_from_dict_1_valid_representations_empty_name():
         'name' : '',
         'validity_start' : '1919-01-24T00:23:00Z',
         'validity_end' : '1924-01-01T00:00:00Z',
+        'color' : '#000000'
     }]
     # Should accept empty name and no color
     State.from_dict(state_with_representations(state_dict, rpz))
@@ -68,6 +69,7 @@ def test_from_dict_1_wrong_representation_date_inversed():
         'name' : '',
         'validity_end' : '1919-01-24T00:23:00Z',
         'validity_start' : '1924-01-01T00:00:00Z',
+        'color' : '#000000'
     }]
     with pytest.raises(BadRequest):
         State.from_dict(state_with_representations(state_dict, rpz))
@@ -76,6 +78,7 @@ def test_from_dict_1_wrong_representation_date_do_not_cover():
         'name' : '',
         'validity_start' : '1919-01-24T00:23:00Z',
         'validity_end' : '1923-01-12T00:00:00Z',
+        'color' : '#000000'
     }]
     with pytest.raises(BadRequest):
         State.from_dict(state_with_representations(state_dict, rpz))
@@ -85,6 +88,7 @@ def test_from_dict_1_wrong_representation_date_is_too_wide():
         'name' : '',
         'validity_start' : '1919-01-24T00:23:00Z',
         'validity_end' : '1924-01-12T00:00:00Z',
+        'color' : '#000000'
     }]
     with pytest.raises(BadRequest):
         State.from_dict(state_with_representations(state_dict, rpz))
@@ -94,11 +98,13 @@ def test_from_dict_2_representation_date_ok():
         'name' : '',
         'validity_start' : '1919-01-24T00:23:00Z',
         'validity_end' : '1920-01-01T00:00:00Z',
+        'color' : '#000000'
     },
     {
         'name' : '',
         'validity_start' : '1920-01-01T00:00:00Z',
         'validity_end' : '1924-01-01T00:00:00Z',
+        'color' : '#000000'
     }
     ]
     State.from_dict(state_with_representations(state_dict, rpz))
@@ -107,11 +113,13 @@ def test_from_dict_2_representation_date_too_wide():
         'name' : '',
         'validity_start' : '1919-01-24T00:23:00Z',
         'validity_end' : '1920-01-01T00:00:00Z',
+        'color' : '#000000'
     },
     {
         'name' : '',
         'validity_start' : '1920-01-01T00:00:00Z',
         'validity_end' : '1924-01-01T01:00:00Z', # 1 hour too late
+        'color' : '#000000'
     }
     ]
     with pytest.raises(BadRequest):
@@ -122,11 +130,13 @@ def test_from_dict_2_representation_empty_time_between():
         'name' : '',
         'validity_start' : '1919-01-24T00:23:00Z',
         'validity_end' : '1920-01-01T00:00:00Z',
+        'color' : '#000000'
     },
     {
         'name' : '',
         'validity_start' : '1920-01-01T00:00:01Z', # 1 second too late
         'validity_end' : '1924-01-01T00:00:00Z',
+        'color' : '#000000'
     }
     ]
     with pytest.raises(BadRequest):
@@ -137,11 +147,13 @@ def test_from_dict_2_representation_period_intersects():
         'name' : '',
         'validity_start' : '1919-01-24T00:23:00Z',
         'validity_end' : '1920-01-01T00:00:01Z',
+        'color' : '#000000'
     },
     {
         'name' : '',
         'validity_start' : '1920-01-01T00:00:00Z', # 1 second too soon
         'validity_end' : '1924-01-01T00:00:00Z',
+        'color' : '#000000'
     }
     ]
     with pytest.raises(BadRequest):
@@ -153,11 +165,13 @@ def test_to_dict():
         'name' : 'France',
         'validity_start' : '1919-01-24T00:23:00Z',
         'validity_end' : '1920-01-01T00:00:01Z',
+        'color' : '#000000'
     }),
     StateRepresentation.from_dict({
         'name' : '',
         'validity_start' : '1920-01-01T00:00:00Z',
         'validity_end' : '1924-01-01T00:00:00Z',
+        'color' : '#000000'
     })
     ])
     as_dict = state.to_dict()

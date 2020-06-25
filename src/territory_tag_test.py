@@ -24,6 +24,7 @@ def get_example_state():
                 'name':  'test ' + datetime.now().isoformat() + str(randint(1, 1e6)),
                 'validity_start': '1918-01-01T00:00:00Z',
                 'validity_end': '1919-01-01T00:00:00Z',
+                'color' : '#000000'
             }
         ]
     })
@@ -169,6 +170,7 @@ def test_assign_to_state_with_unmatching_period():
                 'name':  'test ' + datetime.now().isoformat() + str(randint(1, 1e6)),
                 'validity_start': '1918-01-01T00:00:00Z',
                 'validity_end': '1919-01-01T00:00:00Z',
+                'color' : '#000000'
             }
         ]
     })
@@ -180,6 +182,7 @@ def test_assign_to_state_with_unmatching_period():
                 'name':  'test ' + datetime.now().isoformat() + str(randint(1, 1e6)),
                 'validity_start': '1919-01-01T00:00:00Z',
                 'validity_end': '1920-01-01T00:00:00Z',
+                'color' : '#000000'
             }
         ]
     })
@@ -200,6 +203,7 @@ def test_assign_to_state_territory_starts_before_new_state():
                 'name':  'test ' + datetime.now().isoformat() + str(randint(1, 1e6)),
                 'validity_start': '1918-01-01T00:00:00Z',
                 'validity_end': '1919-01-01T00:00:00Z',
+                'color' : '#000000'
             }
         ]
     })
@@ -211,6 +215,7 @@ def test_assign_to_state_territory_starts_before_new_state():
                 'name':  'test ' + datetime.now().isoformat() + str(randint(1, 1e6)),
                 'validity_start': '1918-02-01T00:00:00Z',
                 'validity_end': '1919-01-01T00:00:00Z',
+                'color' : '#000000'
             }
         ]
     })
@@ -234,6 +239,7 @@ def test_assign_to_state_territory_starts_before_and_ends_after_new_state():
                 'name':  'test ' + datetime.now().isoformat() + str(randint(1, 1e6)),
                 'validity_start': '1918-01-01T00:00:00Z',
                 'validity_end': '1919-01-01T00:00:00Z',
+                'color' : '#000000'
             }
         ]
     })
@@ -245,6 +251,8 @@ def test_assign_to_state_territory_starts_before_and_ends_after_new_state():
                 'name':  'test ' + datetime.now().isoformat() + str(randint(1, 1e6)),
                 'validity_start': '1918-02-01T00:00:00Z',
                 'validity_end': '1918-12-01T00:00:00Z',
+                'color' : '#000000'
+
             }
         ]
     })

@@ -73,6 +73,11 @@ def post_state():
 def put_state():
     return jsonify(StateTag.put(State.from_dict(request.json)))
 
+@app.route('/merge_state/<int:state_id>/into/<int:sovereign_state_id>', methods=['PUT'])
+def merge_states(state_id, sovereign_state_id):
+    return jsonify(StateTag.merge(state_id, sovereign_state_id))
+
+
 @app.route('/state/<int:state_id>', methods=['GET'])
 def get_state(state_id):
     return jsonify(StateTag.get(state_id))
