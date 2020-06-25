@@ -71,10 +71,6 @@ def post_state():
 
 @app.route('/state', methods=['PUT'])
 def put_state():
-    logging.debug('REQUEST JSON')
-    logging.debug(request.json)
-    logging.debug('REQUEST BODY')
-    logging.debug(request)
     return jsonify(StateTag.put(State.from_dict(request.json)))
 
 @app.route('/state/<int:state_id>', methods=['GET'])
@@ -91,6 +87,10 @@ def search_state():
 @app.route('/territory', methods=['POST'])
 def post_territory():
     return jsonify(TerritoryTag.post(Territory.from_dict(request.json)))
+
+@app.route('/territory', methods=['PUT'])
+def put_territory():
+    return jsonify(TerritoryTag.put(Territory.from_dict(request.json)))
 
 @app.route('/territory/<int:territory_id>', methods=['GET'])
 def get_territory(territory_id):
