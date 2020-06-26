@@ -59,6 +59,11 @@ def get_map_by_state(state_id):
     pixel_width = float(request.args.get('pixel_width'))
     return jsonify(MapTag.get_by_state(state_id, date, pixel_width))
 
+@app.route('/gif_map_for_state/<int:state_id>', methods=['GET'])
+def get_maps_by_state(state_id):
+    pixel_width = float(request.args.get('pixel_width'))
+    return jsonify(MapTag.get_evolution_by_state(state_id, pixel_width))
+
 @app.route('/map_for_territory/<int:territory_id>', methods=['GET'])
 def get_map_by_territory(territory_id):
     date = date_from_request('date')
@@ -71,7 +76,8 @@ def post_state():
 
 @app.route('/state', methods=['PUT'])
 def put_state():
-    return jsonify(StateTag.put(State.from_dict(request.json)))
+    absorb = request.args.get('absorb_conflicts')
+    return jsonify(StateTag.put(State.from_dict(request.json),  absorb=='True' or absorb=='true'))
 
 @app.route('/merge_state/<int:state_id>/into/<int:sovereign_state_id>', methods=['PUT'])
 def merge_states(state_id, sovereign_state_id):

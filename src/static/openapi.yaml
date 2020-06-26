@@ -178,18 +178,35 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  states:
-                    type : array
-                    items :
-                      $ref: "#/components/schemas/State"
-                  territories:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Territory"
-                  bounding_box:
-                    $ref: "#/components/schemas/BoundingBox"
+                $ref : "#/components/schemas/Map"
+  /gif_map_for_state/{state_id}:
+    get:
+      tags:
+        - Map
+      summary: Returns a map of the state (and neighbors) at a specific time 
+      parameters:
+        - name: state_id
+          in: path
+          required: true
+          description: The id of the state to retrieve
+          schema:
+            $ref : "#/components/schemas/State/properties/state_id"
+        - name: pixel_width
+          in: query
+          required: true
+          description: Pixel width of the map (precision will be computed accordingly)
+          schema:
+            type: number
+          example: 1.0
+      responses:
+        "200":
+          description: Map was retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items :
+                  $ref : "#/components/schemas/Map"
   /map_for_territory/{territory_id}:
     get:
       tags:
@@ -221,19 +238,8 @@ paths:
           description: Map was retrieved
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  states:
-                    type : array
-                    items :
-                      $ref: "#/components/schemas/State"
-                  territories:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Territory"
-                  bounding_box:
-                    $ref: "#/components/schemas/BoundingBox"
+              schema :
+                $ref : "#/components/schemas/Map"
   /state:
     post:
       tags:
@@ -260,6 +266,13 @@ paths:
       tags:
         - State
       summary : Updates the state in body
+      parameters:
+        - name: absorb_conflicts
+          description: If the date is extended and conflicts exist, these conflicts are merged into this state. The conflicts must be inside the provided period
+          in: query
+          schema :
+            type: boolean
+            default : False
       requestBody :
         required : true
         content :
@@ -270,7 +283,7 @@ paths:
         "200" :
           description : "The state was modified"
         "404" : 
-          description: tuple (state_id, validity_start, validity_end) not found
+          description: state not found
 
   /state/{state_id}:
     get:
@@ -481,6 +494,19 @@ paths:
 
 components:
   schemas:
+    Map : 
+      type: object
+      properties:
+        states:
+          type : array
+          items :
+            $ref: "#/components/schemas/State"
+        territories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Territory"
+        bounding_box:
+          $ref: "#/components/schemas/BoundingBox"
     State:
       type: object
       properties:

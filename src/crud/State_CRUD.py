@@ -21,30 +21,33 @@ class StateCRUD:
         return state_id
     
     @staticmethod
-    def edit(cursor, updated_state):
+    def edit(cursor, updated_state, change_representations=False, change_validity_start = False, change_validity_end=False):
         assert isinstance(updated_state, State)
-        cursor.execute('''
-            DELETE FROM state_names
-            WHERE state_id=%s
-        ''', (updated_state.state_id, ))
-        cursor.execute('''
-            UPDATE states SET validity_start=%s
-            WHERE state_id=%s AND validity_start!=%s
-        ''', (updated_state.validity_start, updated_state.state_id, updated_state.validity_start ))
-        cursor.execute('''
-            UPDATE states SET validity_end=%s
-            WHERE state_id=%s AND validity_end!=%s
-        ''', (updated_state.validity_end, updated_state.state_id, updated_state.validity_end ))
-        for rpz in updated_state.representations:
-            try:
-                cursor.execute(
-                    'INSERT INTO state_names(name, state_id, validity_start, validity_end, color) VALUES(%s, %s, %s, %s, %s)',
-                    (rpz.name, updated_state.state_id, rpz.validity_start,
-                        rpz.validity_end, rpz.color)
-                )
-            # Foreign key violation : state_id is not referenced in table states
-            except psycopg2.errors.lookup('23503'):
-                raise NotFound(f'State does not exist : {updated_state.state_id}')
+        if change_representations :
+            cursor.execute('''
+                DELETE FROM state_names
+                WHERE state_id=%s
+            ''', (updated_state.state_id, ))
+            for rpz in updated_state.representations:
+                try:
+                    cursor.execute(
+                        'INSERT INTO state_names(name, state_id, validity_start, validity_end, color) VALUES(%s, %s, %s, %s, %s)',
+                        (rpz.name, updated_state.state_id, rpz.validity_start,
+                            rpz.validity_end, rpz.color)
+                    )
+                # Foreign key violation : state_id is not referenced in table states
+                except psycopg2.errors.lookup('23503'):
+                    raise NotFound(f'State does not exist : {updated_state.state_id}')
+        if change_validity_start:
+            cursor.execute('''
+                UPDATE states SET validity_start=%s
+                WHERE state_id=%s
+            ''', (updated_state.validity_start, updated_state.state_id ))
+        if change_validity_end:
+            cursor.execute('''
+                UPDATE states SET validity_end=%s
+                WHERE state_id=%s
+            ''', (updated_state.validity_end, updated_state.state_id))
     @staticmethod
     def count(cursor):
         cursor.execute('''
