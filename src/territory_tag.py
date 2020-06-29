@@ -49,7 +49,8 @@ class TerritoryTag:
             original_territory = TerritoryCRUD.get(cursor, territory.territory_id)
             if original_territory.state_id != territory.state_id:
                 TerritoryTag._assign_to_state(cursor, original_territory, territory.state_id)
-        return territory
+            TerritoryCRUD.edit(cursor, territory, change_color=original_territory.color != territory.color, change_name=original_territory.name != territory.name)
+        return territory.territory_id
 
     '''
     Returns the created territories ids
