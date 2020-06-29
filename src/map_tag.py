@@ -37,7 +37,8 @@ class MapTag:
             return {
                 'states' : states,
                 'territories' : territories,
-                'bounding_box' : bbox
+                'bounding_box' : bbox,
+                'date' : date
             }
     @staticmethod
     def get_evolution_by_state(state_id, pixel_width):
@@ -59,7 +60,8 @@ class MapTag:
                 res.append({
                     'states' : states,
                     'territories' : territories,
-                    'bounding_box' : bbox
+                    'bounding_box' : bbox,
+                    'date' : date
                 })
             return res
     @staticmethod
@@ -77,7 +79,8 @@ class MapTag:
             return {
                 'states' : states,
                 'territories' : territories,
-                'bounding_box' : bbox
+                'bounding_box' : bbox,
+                'date' : date
             }
 
 def precision_from_bbox_and_px_width(bbox, pixel_width):
