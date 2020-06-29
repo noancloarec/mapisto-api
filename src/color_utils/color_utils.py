@@ -13,4 +13,4 @@ def colour_distance(hex_1, hex_2):
     return np.linalg.norm(lab1 - lab2)
 
 def colours_roughly_equal(hex_1, hex_2):
-    return colour_distance(hex_1, hex_2) < 15
+    return colour_distance(hex_1, hex_2) < 5

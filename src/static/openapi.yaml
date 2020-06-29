@@ -399,12 +399,11 @@ paths:
               $ref: "#/components/schemas/Territory"
       responses:
         "200":
-          description: Territory Edited
+          description: The id of the edited territory
           content:
             application/json :
               schema :
                 type: number
-                description: The id of the added territory
         "400":
           description: Malformed Territory
         "404":
@@ -507,6 +506,12 @@ components:
             $ref: "#/components/schemas/Territory"
         bounding_box:
           $ref: "#/components/schemas/BoundingBox"
+        date : 
+          type: string
+          description: "The date of the map"
+          format: datetime
+          example: "1918-01-01T00:00:00Z"
+
     State:
       type: object
       properties:
