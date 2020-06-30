@@ -466,30 +466,38 @@ paths:
   #           to_be_absorbed has a validity period that lies outside of state_id validity period
   #         "
 
-  # /movie/{state_id}:
-  #   get:
-  #     tags:
-  #       - Video
-  #     summary: Retrieve the evolution of a state through its lifespan
-  #     parameters: 
-  #       - name : state_id
-  #         in: path
-  #         description: The id of the state which we want to play the evolution
-  #         required : true
-  #         schema : 
-  #           $ref : "#/components/schemas/Territory/properties/territory_id"
-  #         example : 79
-  #     responses:
-  #       "200":
-  #         description: The state evolution was correctly retrieved
-  #         content:
-  #           application/json :
-  #             schema :
-  #               type: array
-  #               items :
-  #                 $ref: "#/components/schemas/Scene"
-  #       "404" :
-  #         description: State not found
+  /state/{state_id}/movie:
+    get:
+      tags:
+        - Video
+      summary: Retrieve the evolution of a state through its lifespan
+      parameters: 
+        - name : state_id
+          in: path
+          description: The id of the state which we want to play the evolution
+          required : true
+          schema : 
+            $ref : "#/components/schemas/State/properties/state_id"
+          example : 79
+        - name: pixel_width
+          in: query
+          required: true
+          description: Pixel width of the map (precision will be computed accordingly)
+          schema:
+            type: number
+          example: 1.0
+
+      responses:
+        "200":
+          description: The state evolution was correctly retrieved
+          content:
+            application/json :
+              schema :
+                type: array
+                items :
+                  $ref: "#/components/schemas/Scene"
+        "404" :
+          description: State not found
 
 components:
   schemas:
@@ -622,12 +630,14 @@ components:
           type: string
           format: datetime
           example: "1919-01-01T00:00:00Z"
-        map_evolution:
+        states :
           type: array
           items: 
             $ref : "#/components/schemas/State"
           description: The list of states that took part within the scene lifespan
+        territories :
+          type: array
+          items: 
+            $ref : "#/components/schemas/Territory"
         bounding_box:
-          description: The bounding box in which to play the scene
-          type: string
-          example: "#FF0000"
+          $ref : "#/components/schemas/BoundingBox"

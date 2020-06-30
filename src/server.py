@@ -18,7 +18,7 @@ from territory_tag import TerritoryTag
 from map_tag import MapTag
 from resources.Territory import Territory
 from state_tag import StateTag
-
+from movie_tag import MovieTag
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -87,6 +87,11 @@ def merge_states(state_id, sovereign_state_id):
 @app.route('/state/<int:state_id>', methods=['GET'])
 def get_state(state_id):
     return jsonify(StateTag.get(state_id))
+
+@app.route('/state/<int:state_id>/movie', methods=['GET'])
+def get_state_movie(state_id):
+    pixel_width = float(request.args.get('pixel_width'))
+    return jsonify(MovieTag.get_by_state(state_id, pixel_width))
 
 @app.route('/state_search', methods=['GET'])
 def search_state():

@@ -1,3 +1,5 @@
+import logging
+
 class BoundingBox:
     def __init__(self, x, y, width, height):
         self.x = x
@@ -33,8 +35,8 @@ class BoundingBox:
         return BoundingBox(min_x, min_y, max_x-min_x, max_y-min_y)
 
     
-    def get_area_percentage_in_common(self, other):
-        return self.intersection(other).area() / self.union(other).area() * 100
+    def get_area_percentage_in_common(self, other, log=None):        
+        return 100 * self.intersection(other).area() / self.union(other).area()
 
     def to_dict(self):
         return {
@@ -53,6 +55,14 @@ class BoundingBox:
     
     def center(self):
         return (self.x+self.width / 2, self.y+self.height/2)
+
+    def resize(self, factor):
+        return BoundingBox(
+            x= self.x - (factor - 1) * self.width / 2,
+            y= self.y - (factor - 1) * self.height / 2,
+            width= self.width * factor,
+            height= self.height * factor
+        )
 
     def enlarge_to_aspect_ratio(self, aspect_ratio) :
         aspect = self.width / self.height

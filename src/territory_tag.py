@@ -7,7 +7,7 @@ from werkzeug.exceptions import Conflict
 from maps_geometry.consistency import territories_conflict
 from maps_geometry.compression import compress_territory
 from werkzeug.exceptions import BadRequest
-from color_utils.color_utils import colours_roughly_equal
+from display_utils.color_utils import colours_roughly_equal
 import logging
 
 class TerritoryTag:

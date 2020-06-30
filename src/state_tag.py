@@ -3,7 +3,7 @@ from crud.db import get_cursor
 from werkzeug.exceptions import Conflict
 from crud.State_CRUD import StateCRUD
 from crud.Territory_CRUD import TerritoryCRUD
-from color_utils.color_utils import colours_roughly_equal
+from display_utils.color_utils import colours_roughly_equal
 class StateTag:
 	@staticmethod
 	def post(state):

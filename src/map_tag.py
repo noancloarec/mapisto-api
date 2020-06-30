@@ -8,6 +8,7 @@ import logging
 from crud.State_CRUD import StateCRUD
 import conf
 from werkzeug.exceptions import NotFound
+from display_utils.precision import precision_from_bbox_and_px_width
 class MapTag:
     @staticmethod
     def get(bbox, date, precision_level):
@@ -83,11 +84,6 @@ class MapTag:
                 'date' : date
             }
 
-def precision_from_bbox_and_px_width(bbox, pixel_width):
-    assert isinstance(bbox, BoundingBox)
-    km_per_pt= 1100/40000 * bbox.width
-    required_precision = .5*km_per_pt
-    return functools.reduce(lambda prev,curr : curr if abs(curr - required_precision) < abs(prev - required_precision) else prev , conf.PRECISION_LEVELS )
 
 def _determine_dates_to_show(cursor, state_id):
     its_territories = TerritoryCRUD.get_by_state(cursor, state_id)
@@ -96,11 +92,11 @@ def _determine_dates_to_show(cursor, state_id):
     start = min([t.validity_start for t in its_territories])
     end = max([t.validity_end for t in its_territories])
     end = end.replace(year=end.year-1)
-    logging.error('start : ')
-    logging.error(start.isoformat())
+    # logging.error('start : ')
+    # logging.error(start.isoformat())
     if end <= start :
         return [start]
     nb_years = end.year - start.year
-    nb_maps = max(0, floor(log(nb_years)))
+    nb_maps = floor(nb_years**(1/2))
     gap_per_maps = floor(nb_years / nb_maps)
-    return [start.replace(year=start.year+i*gap_per_maps) for i in range(nb_maps+1)] + [end]
+    return [start.replace(year=start.year+i*gap_per_maps) for i in range(nb_maps+1)]
