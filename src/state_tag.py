@@ -3,6 +3,7 @@ from crud.db import get_cursor
 from werkzeug.exceptions import Conflict
 from crud.State_CRUD import StateCRUD
 from crud.Territory_CRUD import TerritoryCRUD
+from exceptions.merge_state_conflict import MergeStateConflictException
 from display_utils.color_utils import colours_roughly_equal
 class StateTag:
 	@staticmethod
@@ -72,7 +73,8 @@ class StateTag:
 		to_merge = StateCRUD.get(cursor, to_merge_id)
 		sovereign = StateCRUD.get(cursor, sovereign_state_id)
 		if to_merge.validity_start < sovereign.validity_start or to_merge.validity_end > sovereign.validity_end:
-			raise Conflict(f'The state to merge period {(to_merge.validity_start, to_merge.validity_end)} overflows the period of the sovereign state {(sovereign.validity_start, sovereign.validity_end)}')
+			raise MergeStateConflictException(f'The state to merge period {(to_merge.validity_start, to_merge.validity_end)} overflows the period of the sovereign state {(sovereign.validity_start, sovereign.validity_end)}',
+				 [t.territory_id for t in TerritoryCRUD.get_by_state(cursor, to_merge_id)])
 		territories_to_change = TerritoryCRUD.get_by_state(cursor, to_merge_id)
 		for territory in territories_to_change:
 			

@@ -65,9 +65,12 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/LandShape'
+                type : object
+                properties:
+                  lands :
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LandShape'
     post:
       tags:
         - Land
@@ -80,7 +83,13 @@ paths:
       responses:
         "200":
           description: The land shape was correctly added
-
+          content:
+            application/json :
+              schema:
+                type : object
+                properties:
+                  added_land : 
+                    $ref : "#/components/schemas/Land/properties/land_id"
   /map:
     get:
       tags:
@@ -204,9 +213,12 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items :
-                  $ref : "#/components/schemas/Map"
+                type : object
+                properties:
+                  maps :
+                    type: array
+                    items :
+                      $ref : "#/components/schemas/Map"
   /map_for_territory/{territory_id}:
     get:
       tags:
@@ -257,9 +269,12 @@ paths:
           description: State was correctly added
           content:
             application/json :
-              schema :
-                type: number
-                description: The id of the added state
+              schema:
+                type : object
+                properties:
+                  added_state :
+                    type: number
+                    description: The id of the added state
         "400":
           description: Malformed State
     put:
@@ -282,6 +297,15 @@ paths:
       responses:
         "200" :
           description : "The state was modified"
+          content:
+            application/json :
+              schema:
+                type : object
+                properties:
+                  modified_state :
+                    type: number
+                    description : the id of the modified state
+
         "404" : 
           description: state not found
 
@@ -325,10 +349,13 @@ paths:
         "200" :
           content:
             application/json :
-              schema : 
-                type : array
-                items : 
-                  $ref : "#/components/schemas/State"
+              schema:
+                type : object
+                properties:
+                  search_results :
+                    type : array
+                    items : 
+                      $ref : "#/components/schemas/State"
           description: A list of state retrieved
   /merge_state/{state_id}/into/{sovereign_state_id}:
     put:
@@ -354,9 +381,12 @@ paths:
           description: States were merged
           content:
             application/json :
-              schema :
-                type: number
-                description: The id of the sovereign_state
+              schema:
+                type : object
+                properties:
+                  merged_into :
+                    type: number
+                    description: The id of the sovereign_state
         "400":
           description: Impossible merge, may be a date conflict, the sovereign_state period must include the state period.
 
@@ -377,9 +407,12 @@ paths:
           description: Territory added
           content:
             application/json :
-              schema :
-                type: number
-                description: The id of the added territory
+              schema:
+                type : object
+                properties:
+                  added_territory :
+                    type: number
+                    description: The id of the added territory
         "400":
           description: Malformed Territory
         "404":
@@ -402,8 +435,12 @@ paths:
           description: The id of the edited territory
           content:
             application/json :
-              schema :
-                type: number
+              schema:
+                type : object
+                properties:
+                  modified_territory :
+                    type: number
+                    description: The id of the modified territory
         "400":
           description: Malformed Territory
         "404":
@@ -429,42 +466,6 @@ paths:
           description: Territory info retrieved
         "404" :
           description: Territory not found
-
-  # /state/{state_id}/absorb/{to_be_absorbed}:
-  #   put:
-  #     tags:
-  #       - State
-  #     summary: "
-  #     Merge to_be_absorbed state in state_id, reassign all territories
-  #     "
-  #     parameters :
-  #       - name: state_id
-  #         in : path
-  #         description: The id of the state which whill contains to_be_absorbed
-  #         required : true
-  #         schema :
-  #           $ref : "#/components/schemas/State/properties/state_id"
-  #         example : 1
-  #       - name: to_be_absorbed
-  #         in : path
-  #         description: The id of the state that will be absorbed
-  #         required : true
-  #         schema :
-  #           $ref : "#/components/schemas/State/properties/state_id"
-  #         example : 2
-  #     responses:
-  #       "200" :
-  #         content:
-  #           application/json :
-  #             schema : 
-  #               type : number
-  #         description: The id of the merged state
-  #       "404" :
-  #         description: Either to_be_absorbed or state_id was not found
-  #       "400" : 
-  #         description: "
-  #           to_be_absorbed has a validity period that lies outside of state_id validity period
-  #         "
 
   /state/{state_id}/movie:
     get:
@@ -492,10 +493,13 @@ paths:
           description: The state evolution was correctly retrieved
           content:
             application/json :
-              schema :
-                type: array
-                items :
-                  $ref: "#/components/schemas/Scene"
+              schema:
+                type : object
+                properties:
+                  scenes :
+                    type: array
+                    items :
+                      $ref: "#/components/schemas/Scene"
         "404" :
           description: State not found
 

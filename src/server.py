@@ -4,11 +4,11 @@ from datetime import datetime
 from pprint import pprint
 from resources.BoundingBox import BoundingBox
 from dateutil.parser import parse, ParserError
-from flask import Flask, jsonify, redirect, request, send_from_directory
-from flask_cors import CORS
+from flask import Flask,  redirect, request, send_from_directory
+from flask_cors import CORS, cross_origin
 from flask_swagger_ui import get_swaggerui_blueprint
 from werkzeug.exceptions import BadRequest, InternalServerError, HTTPException
-
+from exceptions.mapisto_exceptions import MapistoException
 from json_encoder import MapistoObjectsEncoder
 from resources.Land import Land
 import pytz
@@ -41,6 +41,7 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
 
+
 @app.route('/static/<path:path>')
 def send_static(path):
     return send_from_directory('static', path)
@@ -50,79 +51,83 @@ def send_static(path):
 def get_map():
     date = date_from_request('date')
     precision, bbox = extract_map_request()
-    return jsonify(MapTag.get(bbox, date, precision))
+    return MapTag.get(bbox, date, precision)
 
 @app.route('/map_for_state/<int:state_id>', methods=['GET'])
 def get_map_by_state(state_id):
     date = date_from_request('date')
     logging.debug(request.args)
     pixel_width = float(request.args.get('pixel_width'))
-    return jsonify(MapTag.get_by_state(state_id, date, pixel_width))
+    return MapTag.get_by_state(state_id, date, pixel_width)
 
 @app.route('/gif_map_for_state/<int:state_id>', methods=['GET'])
 def get_maps_by_state(state_id):
     pixel_width = float(request.args.get('pixel_width'))
-    return jsonify(MapTag.get_evolution_by_state(state_id, pixel_width))
+    return {
+        "maps" : MapTag.get_evolution_by_state(state_id, pixel_width)
+        }
 
 @app.route('/map_for_territory/<int:territory_id>', methods=['GET'])
 def get_map_by_territory(territory_id):
     date = date_from_request('date')
     pixel_width = float(request.args.get('pixel_width'))
-    return jsonify(MapTag.get_by_territory(territory_id, date, pixel_width))
+    return MapTag.get_by_territory(territory_id, date, pixel_width)
 
 @app.route('/state', methods=['POST'])
 def post_state():
-    return jsonify(StateTag.post(State.from_dict(request.json)))
+    return { "added_state" : StateTag.post(State.from_dict(request.json)) }
 
 @app.route('/state', methods=['PUT'])
 def put_state():
     absorb = request.args.get('absorb_conflicts')
-    return jsonify(StateTag.put(State.from_dict(request.json),  absorb=='True' or absorb=='true'))
+    return { "modified_state" : StateTag.put(State.from_dict(request.json),  absorb=='True' or absorb=='true')}
 
 @app.route('/merge_state/<int:state_id>/into/<int:sovereign_state_id>', methods=['PUT'])
 def merge_states(state_id, sovereign_state_id):
-    return jsonify(StateTag.merge(state_id, sovereign_state_id))
+    return {
+        "merged_into" : StateTag.merge(state_id, sovereign_state_id)
+    }
 
 
 @app.route('/state/<int:state_id>', methods=['GET'])
 def get_state(state_id):
-    return jsonify(StateTag.get(state_id))
+    return StateTag.get(state_id).to_dict()
 
 @app.route('/state/<int:state_id>/movie', methods=['GET'])
 def get_state_movie(state_id):
     pixel_width = float(request.args.get('pixel_width'))
-    return jsonify(MovieTag.get_by_state(state_id, pixel_width))
+    return {"scenes" : MovieTag.get_by_state(state_id, pixel_width)}
 
 @app.route('/state_search', methods=['GET'])
 def search_state():
     pattern = request.args.get('pattern')
     if not pattern or not pattern.strip():
         raise BadRequest('Empty pattern to search')
-    return jsonify(StateTag.search(pattern.strip()))
+    return {"search_results" : StateTag.search(pattern.strip()) }
 
 @app.route('/territory', methods=['POST'])
 def post_territory():
-    return jsonify(TerritoryTag.post(Territory.from_dict(request.json)))
+    return {"added_territory" : TerritoryTag.post(Territory.from_dict(request.json)) }
 
 @app.route('/territory', methods=['PUT'])
 def put_territory():
-    return jsonify(TerritoryTag.put(Territory.from_dict(request.json)))
+    return { "modified_territory" : TerritoryTag.put(Territory.from_dict(request.json)) }
 
 @app.route('/territory/<int:territory_id>', methods=['GET'])
 def get_territory(territory_id):
-    return jsonify(TerritoryTag.get(territory_id))
+    return TerritoryTag.get(territory_id).to_dict()
 
 
 @app.route('/land', methods=['POST'])
 def post_land():
     land = Land.from_dict(request.json)
-    return jsonify(LandTag.post_land(land))
+    return {"added_land" : LandTag.post_land(land)}
 
 
 @app.route('/land', methods=['GET'])
 def get_land():
     precision, bbox = extract_map_request()
-    return jsonify(LandTag.get_lands(bbox, precision))
+    return {"lands" : LandTag.get_lands(bbox, precision)}
 
 @app.route('/', methods=['GET'])
 def redirectDoc():
@@ -153,6 +158,14 @@ def extract_map_request():
     bbmax_y = int(float(request.args.get('max_y')))
     bbox = BoundingBox(bbmin_x, bbmin_y, bbmax_x-bbmin_x, bbmax_y-bbmin_y)
     return (precision, bbox)
+
+@app.errorhandler(MapistoException)
+def handle_merge_state_conflict(e):
+    logging.debug(vars(e))
+    return {
+        "description" : e.description,
+        "data" : e.response
+    }, e.code
 
 
 @app.errorhandler(HTTPException)
