@@ -6,6 +6,7 @@ from datetime import datetime
 import copy
 from crud.db import get_cursor
 import functools
+from crud.Land_CRUD import LandCRUD
 from display_utils.precision import precision_from_bbox_and_px_width
 
 class MovieTag:
@@ -19,13 +20,16 @@ class MovieTag:
                 vb['bbox'] = vb['bbox'].enlarge_to_aspect_ratio(16/9).resize(1.2)
             res = []
             for vb in viewboxes_harmony:
-                territories = TerritoryCRUD.get_within_bbox_in_period(cursor, vb['bbox'], vb['start'], vb['end'], precision_from_bbox_and_px_width(vb['bbox'], pixel_width))
+                precision =  precision_from_bbox_and_px_width(vb['bbox'], pixel_width)
+                territories = TerritoryCRUD.get_within_bbox_in_period(cursor, vb['bbox'], vb['start'], vb['end'],precision)
                 states = StateCRUD.get_many(cursor, [t.state_id for t in territories])
                 res.append({
                     'territories' : territories,
                     'states' : states,
                     'validity_start' : vb['start'],
-                    'validity_end' : vb['end']
+                    'validity_end' : vb['end'],
+                    'bounding_box' : vb['bbox'],
+                    'lands' : LandCRUD.get_lands(cursor, vb['bbox'], precision)
                 })
             return res
             # # Some period may be empty for a state, the viewbox shall be the same as the previous one
@@ -57,20 +61,23 @@ def _merge_similar_viewboxes(bbox_by_period):
     bbox_by_period = copy.deepcopy(bbox_by_period)
     for i in range(len(bbox_by_period)-1):
         current = bbox_by_period[i]
-        next = bbox_by_period[i+1]
-        if current['bbox'].get_area_percentage_in_common(next['bbox']) > 10:
+        next_bbox = bbox_by_period[i+1]
+        if current['bbox'].get_area_percentage_in_common(next_bbox['bbox']) > 10:
             union = {
                 'start' : current['start'],
-                'end' : next['end'],
-                'bbox' : current['bbox'].union(next['bbox'])
+                'end' : next_bbox['end'],
+                'bbox' : current['bbox'].union(next_bbox['bbox'])
             }
             bbox_by_period[i] = union
             bbox_by_period[i+1] = union
-    logging.debug(bbox_by_period)
-    res = [bbox_by_period[0]]
-    for i in range(1, len(bbox_by_period)-1):
+    for vb in bbox_by_period :
+        logging.debug({"start" : vb['start'], 'end' : vb['end']})
+
+    res = []
+    for i in range(len(bbox_by_period)-1):
         if bbox_by_period[i]['start'] != bbox_by_period[i+1]['start']:
-            res.append(bbox_by_period[i+1])
+            res.append(bbox_by_period[i])
+    res.append(bbox_by_period[-1])
     return res
     
 def _merge_bboxes(bboxes):
