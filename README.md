@@ -1,12 +1,28 @@
 # Mapisto API
-## Usage
+## Install
+### Setup database
 ```bash
-docker build . -t mapisto-api
-docker run mapisto-api \
--e MAPISTO_DB_NAME='<your_postgresql_db_name' \
--e MAPISTO_DB_USER='<your_username>' \
--e MAPISTO_DB_HOST='<db_host>' \
--e MAPISTO_DB_PORT='<db_port>' \
--e MAPISTO_DB_PASSWORD='<db_password>' \
--p 8080:5000
+docker run -e POSTGRES_PASSWORD=password -v $HOME/docker/volumes/postgres:/var/lib/postgresql/data --name database postgres:12-alpine &
+docker exec -it database bash
+# In the db container
+createuser --interactive --pwprompt # Chose your name and password, answer no to all questions
+createdb -O <username> mapisto
+psql mapisto <username>
+# Paste the content of create_db.sql
 ```
+### Configuration
+```bash
+cp conf.example.env conf.env
+# Set MAPISTO_DB_USER and MAPISTO_DB_PASSWORD to mach the credentials you set up the db with
+```
+## Run
+```bash
+docker-compose-up
+```
+Go to http://localhost:8080
+
+## Tests
+### Setup test db
+Either setup a new database to use for test, or use the same as before with `cp conf.env conf.test.env`
+### Run tests
+`docker-compose -f docker-compose.run_tests.yml up`
