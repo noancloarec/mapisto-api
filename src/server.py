@@ -19,11 +19,13 @@ from map_tag import MapTag
 from resources.Territory import Territory
 from state_tag import StateTag
 from movie_tag import MovieTag
+from flask_compress import Compress
 
 logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 CORS(app)
+Compress(app)
 # app.config['CORS_HEADERS'] = 'Content-Type'
 app.json_encoder = MapistoObjectsEncoder
 
@@ -116,6 +118,10 @@ def put_territory():
 @app.route('/territory/<int:territory_id>', methods=['GET'])
 def get_territory(territory_id):
     return TerritoryTag.get(territory_id).to_dict()
+
+@app.route('/territory/<int:territory_id>', methods=['DELETE'])
+def delete_territory(territory_id):
+    return {"deleted_territory" : TerritoryTag.delete(territory_id)}
 
 
 @app.route('/land', methods=['POST'])
