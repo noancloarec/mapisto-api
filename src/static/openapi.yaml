@@ -3,6 +3,7 @@ info:
   title: Mapisto API
   version: "0.1"
 servers:
+  - url: https://api.dev.mapisto.org
   - url: https://api.mapisto.org
   - url: http://localhost:8080
   - url: http://localhost:7070
