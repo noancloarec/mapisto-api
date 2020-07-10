@@ -2,6 +2,7 @@ from resources.BoundingBox import BoundingBox
 from datetime import datetime
 from crud.db import get_cursor
 from crud.Territory_CRUD import TerritoryCRUD
+from crud.Land_CRUD import LandCRUD
 import functools
 from math import log, floor
 import logging
@@ -62,7 +63,8 @@ class MapTag:
                     'states' : states,
                     'territories' : territories,
                     'bounding_box' : bbox,
-                    'date' : date
+                    'date' : date,
+                    'lands': LandCRUD.get_lands(cursor, bbox, precision)
                 })
             return res
     @staticmethod
@@ -81,7 +83,8 @@ class MapTag:
                 'states' : states,
                 'territories' : territories,
                 'bounding_box' : bbox,
-                'date' : date
+                'date' : date,
+                'lands': LandCRUD.get_lands(cursor, bbox, precision)
             }
 
 
@@ -97,6 +100,6 @@ def _determine_dates_to_show(cursor, state_id):
     if end <= start :
         return [start]
     nb_years = end.year - start.year
-    nb_maps = floor(nb_years**(1/2))
+    nb_maps = floor(nb_years**(1/3))
     gap_per_maps = floor(nb_years / nb_maps)
     return [start.replace(year=start.year+i*gap_per_maps) for i in range(nb_maps+1)]

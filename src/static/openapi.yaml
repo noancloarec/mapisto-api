@@ -467,7 +467,29 @@ paths:
           description: Territory info retrieved
         "404" :
           description: Territory not found
-
+    delete :
+      tags : 
+        - Territories
+      summary : Removes a territory from the database.
+      description : If its parent state is an empty state, also removes it (empty = no territory and no name)
+      parameters : 
+        - name : territory_id
+          in : path
+          schema : 
+            type: number
+          required : true
+      responses:
+        "200" : 
+          content:
+            application/json : 
+              schema :
+                type: object
+                properties:
+                  deleted_territory : 
+                    $ref : "#/components/schemas/Territory/properties/territory_id"
+                  deleted_state :
+                    $ref : "#/components/schemas/State/properties/state_id"
+          description: Territory removed
   /state/{state_id}/movie:
     get:
       tags:

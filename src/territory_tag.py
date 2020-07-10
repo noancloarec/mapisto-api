@@ -40,7 +40,21 @@ class TerritoryTag:
     @staticmethod
     def delete(territory_id):
         with get_cursor() as cursor:
+            territory = TerritoryCRUD.get(cursor, territory_id)
+            state = StateCRUD.get(cursor, territory.state_id)
+            if len(state.representations) == 1 and not state.representations[0].name :
+                its_territories = TerritoryCRUD.get_by_state(cursor, territory.state_id)
+                if len(its_territories) == 1:
+                    StateCRUD.delete(cursor, state.state_id)
+                    return {
+                        "deleted_state" : state.state_id,
+                        "deleted_territory" : territory_id
+                    }
             TerritoryCRUD.delete(cursor, territory_id)
+            return {
+                "deleted_state" : None,
+                "deleted_territory" : territory_id
+            }
 
     @staticmethod
     def put(territory):
