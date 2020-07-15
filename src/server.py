@@ -28,20 +28,20 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 CORS(app)
 Compress(app)
-app.config['ELASTIC_APM'] = {
-  # Set required service name. Allowed characters:
-  # a-z, A-Z, 0-9, -, _, and space
-  'SERVICE_NAME': 'mapistoapi',
-
-  # Use if APM Server requires a token
-  'SECRET_TOKEN': '',
-
-'SERVER_URL': 'http://apm-server:8200'
-}
 
 # Does not send transactions (only errors) if flask_debug is on
 if not app.debug:
     logging.info('Initializing APM agent')
+    app.config['ELASTIC_APM'] = {
+    # Set required service name. Allowed characters:
+    # a-z, A-Z, 0-9, -, _, and space
+    'SERVICE_NAME': os.environ.get('SERVICE_NAME'),
+
+    # Use if APM Server requires a token
+    'SECRET_TOKEN': '',
+
+        'SERVER_URL': 'http://apm-server:8200'
+    }
     apm = ElasticAPM(app)
 
 # app.config['CORS_HEADERS'] = 'Content-Type'
