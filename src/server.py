@@ -20,12 +20,29 @@ from resources.Territory import Territory
 from state_tag import StateTag
 from movie_tag import MovieTag
 from flask_compress import Compress
+from elasticapm.contrib.flask import ElasticAPM
+import time
 
 logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 CORS(app)
 Compress(app)
+app.config['ELASTIC_APM'] = {
+  # Set required service name. Allowed characters:
+  # a-z, A-Z, 0-9, -, _, and space
+  'SERVICE_NAME': 'mapistoapi',
+
+  # Use if APM Server requires a token
+  'SECRET_TOKEN': '',
+
+'SERVER_URL': 'http://apm-server:8200'
+}
+
+# Does not send transactions (only errors) if flask_debug is on
+if not Flask.debug:
+    apm = ElasticAPM(app)
+
 # app.config['CORS_HEADERS'] = 'Content-Type'
 app.json_encoder = MapistoObjectsEncoder
 
@@ -48,6 +65,13 @@ app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 def send_static(path):
     return send_from_directory('static', path)
 
+@app.route('/test', methods=['GET'])
+def test():
+    time.sleep(1)
+    if time.time_ns() %2 == 0:
+        return 'test success'
+    else:
+        return 'bad request', 400
 
 @app.route('/map', methods=['GET'])
 def get_map():
@@ -183,4 +207,6 @@ def handle_http(e: HTTPException):
 def handle_500(e):
     logging.info("SERVER ERROR caught : ")
     logging.exception(e)
+    if not Flask.debug:
+        apm.capture_exception()
     return "Internal Server Error", 500
