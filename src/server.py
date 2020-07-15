@@ -40,7 +40,8 @@ app.config['ELASTIC_APM'] = {
 }
 
 # Does not send transactions (only errors) if flask_debug is on
-if not Flask.debug:
+if not app.debug:
+    logging.info('Initializing APM agent')
     apm = ElasticAPM(app)
 
 # app.config['CORS_HEADERS'] = 'Content-Type'
