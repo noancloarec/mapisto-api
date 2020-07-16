@@ -12,6 +12,7 @@ import pytest
 from werkzeug.exceptions import Conflict, NotFound, BadRequest
 import conf
 import logging
+from display_utils.color_utils import colour_distance
 from crud.db import get_cursor
 from state_tag import StateTag 
 from territory_tag import TerritoryTag
@@ -129,9 +130,10 @@ def test_get_color_for_territory_color_similar():
     territory = get_example_territory()
     old_state = get_example_state()
     new_state = get_example_state()
-    territory.color = '#FEEEEE'
+    territory.color = '#FEFEFE'
     old_state.representations[0].color = '#000000'
-    new_state.representations[0].color = '#EEEEEE'
+    new_state.representations[0].color = '#FFFFFF'
+    print(f'Color distance : {colour_distance(territory.color, new_state.representations[0].color) }')
     assert TerritoryTag._get_color_for_territory(
         territory, old_state, new_state) == None
 
