@@ -1,3 +1,16 @@
+''' How to detect errors first'''
+select * from states where extract(hour from validity_start)!= 0 or extract(minutes from validity_start)!=0 or extract(seconds from validity_start)!=0;
+select * from states where extract(hour from validity_end)!= 0 or extract(minutes from validity_end)!=0 or extract(seconds from validity_end)!=0;
+
+select * from state_names where extract(hour from validity_start)!= 0 or extract(minutes from validity_start)!=0 or extract(seconds from validity_start)!=0;
+select * from state_names where extract(hour from validity_end)!= 0 or extract(minutes from validity_end)!=0 or extract(seconds from validity_end)!=0;
+
+select * from territories where extract(hour from validity_start)!= 0 or extract(minutes from validity_start)!=0 or extract(seconds from validity_start)!=0;
+select * from territories where extract(hour from validity_end)!= 0 or extract(minutes from validity_end)!=0 or extract(seconds from validity_end)!=0;
+
+
+''' Correct errors '''
+
 update states SET validity_start=validity_start + INTERVAL '43min' where extract(hour from validity_start)=23 and extract(minutes from validity_start)=17;
 update state_names SET validity_start=validity_start + INTERVAL '43min' where extract(hour from validity_start)=23 and extract(minutes from validity_start)=17;
 update states SET validity_end=validity_end + INTERVAL '43min' where extract(hour from validity_end)=23 and extract(minutes from validity_end)=17;

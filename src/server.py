@@ -207,7 +207,7 @@ def handle_http(e: HTTPException):
 @app.errorhandler(Exception)
 def handle_500(e):
     logging.info("SERVER ERROR caught : ")
-    logging.exception(e)
     if not app.debug:
         apm.capture_exception()
+    logging.exception(e)
     return "Internal Server Error", 500

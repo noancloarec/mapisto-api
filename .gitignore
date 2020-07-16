@@ -136,3 +136,4 @@ dmypy.json
 postgres.conf.env
 conf.env
 conf.test.env
+elasticsearch_data
