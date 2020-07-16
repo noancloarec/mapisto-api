@@ -208,6 +208,6 @@ def handle_http(e: HTTPException):
 def handle_500(e):
     logging.info("SERVER ERROR caught : ")
     logging.exception(e)
-    if not Flask.debug:
+    if not app.debug:
         apm.capture_exception()
     return "Internal Server Error", 500
