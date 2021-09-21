@@ -9,8 +9,8 @@ services:
     env_file:
       - conf.test.env
     depends_on: 
-      - database_test
-  database_test:
+      - database
+  database:
     image: postgres:12-alpine
     ports: 
       - 5434:5432

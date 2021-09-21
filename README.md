@@ -5,6 +5,7 @@
 docker run -e POSTGRES_PASSWORD=password -v $HOME/docker/volumes/postgres:/var/lib/postgresql/data --name database postgres:12-alpine &
 docker exec -it database bash
 # In the db container
+su - postgres
 createuser --interactive --pwprompt # Chose your name and password, answer no to all questions
 createdb -O <username> mapisto
 psql mapisto <username>
