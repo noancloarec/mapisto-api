@@ -20,7 +20,7 @@ from resources.Territory import Territory
 from state_tag import StateTag
 from movie_tag import MovieTag
 from flask_compress import Compress
-from elasticapm.contrib.flask import ElasticAPM
+# from elasticapm.contrib.flask import ElasticAPM
 import time
 
 logging.basicConfig(level=logging.DEBUG)
@@ -29,6 +29,7 @@ app = Flask(__name__)
 CORS(app)
 Compress(app)
 
+"""
 # Does not send transactions (only errors) if flask_debug is on
 if not app.debug:
     logging.info('Initializing APM agent')
@@ -43,6 +44,7 @@ if not app.debug:
         'SERVER_URL': 'http://apm-server:8200'
     }
     apm = ElasticAPM(app)
+"""
 
 # app.config['CORS_HEADERS'] = 'Content-Type'
 app.json_encoder = MapistoObjectsEncoder
@@ -207,7 +209,7 @@ def handle_http(e: HTTPException):
 @app.errorhandler(Exception)
 def handle_500(e):
     logging.info("SERVER ERROR caught : ")
-    if not app.debug:
-        apm.capture_exception()
+    # if not app.debug:
+    #     apm.capture_exception()
     logging.exception(e)
     return "Internal Server Error", 500
